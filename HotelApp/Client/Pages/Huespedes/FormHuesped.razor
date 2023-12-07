@@ -36,13 +36,25 @@
             <ValidationMessage For="@(() => huesp.DniPersona)" />
         </div>
     </div>
-    <div class="form-group">
+ @*    <div class="form-group">
         <label class="mb-2 fw-bold color-primario">Número de habitación</label>
         <div class="mb-2">
             <InputNumber class="form-control" @bind-Value="@huesp.HabitacionNumero" />
             <ValidationMessage For="@(() => huesp.HabitacionNumero)" />
         </div>
+    </div> *@
+
+    <div class="form-group ">
+        <label class="mb-2 fw-bold color-primario">Numero de habitacion</label>
+        <InputSelect class="form-control mb-4" @bind-Value="huesp.HabitacionNumero">
+            <option value="">Numero de Habitacion</option>
+            @foreach (var habitacion in HabitacionesDisponibles)
+            {
+                <option value="@habitacion.Nhab">@habitacion.Nhab</option>
+            }
+        </InputSelect>
     </div>
+
 
     <button class="btn btn-primary" type="submit">Aceptar</button>
     <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
@@ -55,5 +67,47 @@
     [Parameter] public Huesped huesp { get; set; } = new Huesped();
     [Parameter] public EventCallback onValidSubbmit { get; set; }
     [Parameter] public EventCallback onCancel { get; set; }
-    [Parameter] public EventCallback onGuardarYRecargar { get; set; }    
+    [Parameter] public EventCallback onGuardarYRecargar { get; set; }
+    List<Habitacion> Habitaciones = new List<Habitacion>();
+    List<Habitacion> HabitacionesDisponibles = new List<Habitacion>();
+    List<Huesped>? Huespedes;
+    bool Error;
+    string Mensaje = "";
+
+    private async Task LeerHabitaciones()
+    {
+        var RespuestaHuespedes = await http.Get<List<Huesped>>("api/Huesped");
+        Error = RespuestaHuespedes.Error;
+        HabitacionesDisponibles.Clear();
+
+        if (!Error)
+        {
+            var huespedes = RespuestaHuespedes.Respuesta;
+
+            var respuestaHabitaciones = await http.Get<List<Habitacion>>("api/Habitacion");
+            Error = respuestaHabitaciones.Error;
+
+            if (!Error)
+            {
+                Habitaciones = respuestaHabitaciones.Respuesta;
+                HabitacionesDisponibles = Habitaciones
+                .Where(habitacion => habitacion.Estado.ToString() == "disponible" && !huespedes
+                .Any(huesped => huesped.HabitacionNumero == habitacion.Nhab))
+                .ToList();
+            }    
+            else
+            {
+                Mensaje = await respuestaHabitaciones.ObtenerError();
+            }
+        }
+        else
+        {
+            Mensaje = await RespuestaHuespedes.ObtenerError();
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LeerHabitaciones();
+    }
 }
