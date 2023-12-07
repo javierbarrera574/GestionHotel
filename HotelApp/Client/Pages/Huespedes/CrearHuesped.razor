@@ -1,6 +1,9 @@
 ﻿@page "/crear/huesped"
+@using System.Net;
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime jsruntime
+@using HotelApp.Client.Helpers;
 
 <div class="p-4">
     <div class="container col-md-6">
@@ -10,28 +13,29 @@
     </div>
 </div>
 
-@code {
+@code 
+{
     private Huesped huesped = new Huesped();
 
     private async Task Grabar()
     {
-        HuespedDTO huespedDTO = new()
-            {
-                Nombres = huesped.Nombres,
-                Apellidos = huesped.Apellidos,
-                Dni = huesped.Dni,
-                Checkin = huesped.Checkin,
-                DniPersona = huesped.DniPersona
-            };
+        HuespedDTO huespedDTO = new()                 
+        {                  
+            Nombres = huesped.Nombres,                    
+            Apellidos = huesped.Apellidos,                        
+            Dni = huesped.Dni,                         
+            Checkin = huesped.Checkin,                           
+            DniPersona = huesped.DniPersona,                             
+            Habitacionnumero = huesped.HabitacionNumero               
+        };
 
-        var HTTPRespueta = await http.Post<HuespedDTO>("api/Huesped", huespedDTO);
-        navigationManager.NavigateTo("/huespedes");
-
+        var HTTPRespueta = await http.Post<HuespedDTO>("api/Huesped/PostFuncional2", huespedDTO); 
         if (HTTPRespueta.Error)
         {
-            var body = HTTPRespueta.HttpResponseMessage;
+            string MensajeError = await HTTPRespueta.ObtenerError();
+            await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error);
         }
-
+        navigationManager.NavigateTo("/huespedes");
     }
 
     private async Task onGuardarYRecargar()

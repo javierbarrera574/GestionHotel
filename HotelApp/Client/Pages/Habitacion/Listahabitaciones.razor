@@ -1,5 +1,12 @@
-﻿@inject IHTTPServicio http
+﻿@using Microsoft.AspNetCore.SignalR.Client;
+@inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime jsruntime
+@using HotelApp.Client.Helpers
+@using Reservas.BData;
+@using System.Net.Http.Headers;
+@using System.Text.Json;
+@inject HttpClient http1
 
 <PageTitle>Gestion Hotel</PageTitle>
 
@@ -21,12 +28,47 @@
             <span class="color-lila fw-bold">@habitacionesEnMantenimiento</span>
         </button>
     </div>
+
+    @*Intento de filtrado aca*@
+@* 
+    <div class="container my-4 d-flex gap-3 align-items-center">
+        <label for="fechaInicio" class="fw-bold">Fecha de inicio:</label>
+        <MatDatePicker @bind-Value="FechaInicioSeleccionada" Format="yyyy-MM-dd" />
+
+        <label for="fechaFin" class="fw-bold">Fecha de fin:</label>
+        <MatDatePicker @bind-Value="FechaFinSeleccionada" Format="yyyy-MM-dd" />
+
+        <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
+    </div>
+ *@
+
+
+@*  <div class="container my-4 d-flex gap-3 align-items-center">
+    <label for="numeroHabitacion">Número de Habitación:</label>
+        <input type="number" id="numeroHabitacion" @bind="numHab" />
+    <button type="button" @onclick="BuscarPorNumero">Filtrar</button>
+</div>
+ *@
     <div class="container">
+
         <div class="row">
+
             <div class="container my-4 d-flex gap-3 align-items-center">
-                <label for="fechaReserva" class="fw-bold">Filtrar reserva por fecha:</label>
-                <InputDate id="fechaReserva" @bind-Value="fechaSeleccionada" onchange="@ActualizarHabitaciones()" />
+                <label for="fechaInicio" class="fw-bold">Fecha de inicio:</label>
+                <MatDatePicker id="fechaInicio" @bind-Value="FechaInicioSeleccionada" Format="yyyy-MM-dd"/>
+                <label for="fechaFin" class="fw-bold">Fecha de fin:</label>
+                <MatDatePicker id="fechaFin" @bind-Value="FechaFinSeleccionada" Format="yyyy-MM-dd"/>
+                <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
             </div>
+
+            <button class="btn btn-secondary" @onclick="MostrarTodasLasHabitaciones">Mostrar todas las habitaciones</button>
+
+
+            @* <div class="container my-4 d-flex gap-3 align-items-center">
+                <label for="numeroHabitacion">Filtrar N° de habitación:</label>
+                <input type="number" id="numeroHabitacion" @bind="numHab" />
+                <button type="button" @onclick="BuscarPorNumero">Filtrar</button>
+            </div> *@
 
             @if (Error)
             {
@@ -38,13 +80,13 @@
                 {
                     <div class="d-flex justify-content-center align-items-center mt-5">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden">Cargando...</span>
                         </div>
                     </div>
                 }
                 else if (habitaciones.Count == 0)
                 {
-                    <p>no existen datos</p>
+                    <p>No existen datos</p>
                 }
                 else
                 {
@@ -77,19 +119,121 @@
 @code {
 
     List<Habitacion> habitaciones;
+    List<Habitacion> habitacionesFiltradas;
     string Mensaje = "";
     bool Error;
     Habitacion habitacionBorrar;
-    DateTime fechaSeleccionada = DateTime.Today;
+    DateTime FechaInicioSeleccionada = DateTime.Today;
+    DateTime FechaFinSeleccionada = DateTime.Today;
+    private string Estado;
     int habitacionesDisponibles;
     int habitacionesNoDisponibles;
     int habitacionesEnMantenimiento;
-    private int numHab; 
+    string numHab = "";
+
+    private HubConnection hubConnection;
+
+    public event Action<int, string> OnCambioEstadoHabitacion;
+
+    private async Task InitializeSignalR()
+    {
+        //Primera implementacion en tiempo real
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("/ActualizarEstadoHabitacionEnTiempoReal")
+            .Build();
+
+
+        hubConnection.On<Habitacion>("UpdateRoomStatus", (habitacionActualizada) =>
+        {
+            // Buscar y actualizar la habitación en la lista
+            var index = habitaciones.FindIndex(h => h.Nhab == habitacionActualizada.Nhab);
+            if (index != -1)
+            {
+                habitaciones[index] = habitacionActualizada;
+                StateHasChanged();
+            }
+        });
+
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl("/EstadoHabitacionPostHub")
+        .Build();
+
+
+        //Segunda implementacion en tiempo real
+
+        hubConnection.On<Habitacion>("PostRoomStatus", (PostEstadoHabitacion) =>
+        {
+            var indice = habitaciones.FindIndex(x => x.Nhab.Equals(PostEstadoHabitacion.Nhab));
+            if (!indice.Equals(-1))
+            {
+                habitaciones[indice].Estado = PostEstadoHabitacion.Estado;
+                StateHasChanged();
+            }
+            else
+            {
+                var EstadoNuevaHabitacion = new Habitacion
+                {
+                    Nhab = PostEstadoHabitacion.Nhab,
+                    Estado = PostEstadoHabitacion.Estado
+                };
+                habitaciones.Add(EstadoNuevaHabitacion);
+                StateHasChanged();
+            }
+
+        });
+
+
+        //Tercera implementacion en tiempo real
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("/ReservaEstadoHabitacionPost")
+            .Build();
+
+        hubConnection.On<int, string>("CambioEstadoHabitacionPost", (numeroHabitacion, nuevoEstado) =>
+        {
+            // Disparar el evento cuando haya cambios en el estado de la habitación
+            OnCambioEstadoHabitacion?.Invoke(numeroHabitacion, nuevoEstado);
+        });
+
+        //Cuarta implementacion en tiempo real
+
+        hubConnection = new HubConnectionBuilder()
+           .WithUrl("/ReservaEstadoHabitacionPut")
+           .Build();
+
+        hubConnection.On<int, string>("CambioEstadoHabitacionPut", (numeroHabitacion, nuevoEstado) =>
+        {
+            // Disparar el evento cuando haya cambios en el estado de la habitación
+            OnCambioEstadoHabitacion?.Invoke(numeroHabitacion, nuevoEstado);
+        });
+
+        //Quinta implementacion en tiempo real
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl("/HabitacionHubCheckIn")
+        .Build();
+
+        hubConnection.On<int, string>("CambioEstadoHabitacionCheckIn", (numeroHabitacion, nuevoEstado) =>
+        {
+            OnCambioEstadoHabitacion?.Invoke(numeroHabitacion,nuevoEstado);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
         await Leer();
     }
+
+    private async Task MostrarTodasLasHabitaciones()
+    {
+        await Leer();
+    }
+
     private async Task Leer()
     {
         var habitacionesRespuesta = await http.Get<List<Habitacion>>("api/Habitacion");
@@ -114,22 +258,19 @@
 
             foreach (var habitacion in habitaciones)
             {
-                if (habitacion.Estado != "reparacion")
+                switch (habitacion.Estado)
                 {
-                    var reserva = reservas.FirstOrDefault(r =>
-                        r.nhabs == habitacion.Nhab &&
-                        fechaSeleccionada.Date >= r.Fecha_inicio.Date &&
-                        fechaSeleccionada.Date <= r.Fecha_fin.Date
-                    );
-
-                    habitacion.Estado = reserva != null ? "ocupada" : "disponible";
-
-                    if (habitacion.Estado == "disponible")
+                    case "disponible":
                         habitacionesDisponibles++;
-                    else if (habitacion.Estado == "ocupada")
+                        break;
+                    case "ocupada":
                         habitacionesNoDisponibles++;
-                    else if (habitacion.Estado == "reparacion")
+                        break;
+                    case "reparacion":
                         habitacionesEnMantenimiento++;
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -137,27 +278,46 @@
         {
             Mensaje = await habitacionesRespuesta.ObtenerError();
         }
-
     }
 
     private async Task Eliminar(Habitacion habBorrar)
     {
+        //await IJSExtensions.MostrarMensaje(jsruntime,"Titulo","Este es un mensaje de prueba", TipoMensajeSweetAlert.success);
+
         habitacionBorrar = habBorrar;
 
-        var respuesta = await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");
-        if (respuesta.Error)
-        {
-            var body = "Error, no se pudo borrar";
+        //  var respuesta = await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");
+
+        string MensajeConfirmacion = $"¿Desea borrar la habitación N°: {habBorrar.Nhab}?";
+
+
+        //await IJSExtensions.Confirmar(jsruntime, "Confirmar", MensajeConfirmacion, TipoMensajeSweetAlert.question);
+
+        //PARA MOSTRAR MENSAJE PERSONALIZADO
+
+        if (await jsruntime.Confirmar("Confirmar", MensajeConfirmacion, TipoMensajeSweetAlert.question))
+        {        
+            await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");          
+            await Leer();
         }
+
+        //ACA ABAJO ES EN CASO QUE DE UN ERROR--> CONFIGURAR
+
+        // if (respuesta.Error)
+        // {
+        //     var mensaje = respuesta.ObtenerError();
+        //     await jsruntime.InvokeAsync<string>("aleret", mensaje);
+        // }
         habitacionBorrar = null;
         await Leer();
     }
+
     DateTime fechaAnterior; // Variable para almacenar la fecha anterior
     private async Task ActualizarHabitaciones()
     {
-        if (fechaSeleccionada != fechaAnterior)
+        if (FechaInicioSeleccionada != fechaAnterior)
         {
-            fechaAnterior = fechaSeleccionada;
+            fechaAnterior = FechaInicioSeleccionada;
             await Leer();
             StateHasChanged();
         }
@@ -166,4 +326,108 @@
     {
         navigationManager.NavigateTo($"/personas/{numhabit}");
     }
+
+
+    private async Task VerificarErrorEnLog()
+    {
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"api/Habitacion/FiltroFechas/{FechaInicioSeleccionada:yyyy-MM-dd}/{FechaFinSeleccionada:yyyy-MM-dd}");
+
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var response = await http1.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resultado = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(resultado);  // Agrega esta línea para imprimir la respuesta en la consola
+
+                try
+                {
+                    var habitaciones = JsonSerializer.Deserialize<List<Habitacion>>(resultado, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                    // Resto del código...
+                }
+                catch (JsonException jsonEx)
+                {
+                    // Manejar errores de deserialización JSON
+                    Console.WriteLine($"Error de deserialización JSON: {jsonEx.Message}");
+                    habitaciones = null;
+                    Error = true;
+                    var resultado1 = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine(resultado1);
+                    Mensaje = $"Error de deserialización JSON: {jsonEx.InnerException}";
+                }
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+            habitaciones = null;
+            Error = true;
+            Mensaje = $"Error en la solicitud: {ex.Message}";
+        }
+
+
+
+    }
+
+    private async Task Filtrar()
+    {
+       // HTTPRespuesta<Habitacion> h = new HTTPRespuesta<Habitacion>();
+        var response1 = await http.Get<List<Habitacion>>(
+                $"api/Habitacion/FiltroFechas/{FechaInicioSeleccionada:yyyy-MM-dd}/{FechaFinSeleccionada:yyyy-MM-dd}");
+        try
+        {
+            var response = await http1.GetFromJsonAsync<List<Habitacion>>(
+                $"api/Habitacion/FiltroFechas/{FechaInicioSeleccionada:yyyy-MM-dd}/{FechaFinSeleccionada:yyyy-MM-dd}");
+
+            if (response != null)
+            {
+                habitaciones = response;
+                Error = false;
+            }
+            else
+            {
+                habitaciones = null;
+                Error = true;
+                Mensaje = "No se encontraron habitaciones para filtrar";
+            }
+
+        }
+        catch (Exception ex)
+        {
+            habitaciones = null;
+            Error = true;
+
+            if (response1.Error)
+            
+                habitaciones = null;
+                Error = true;
+                string mensaje = await response1.ObtenerError();
+                await jsruntime.Error("Error", mensaje, TipoMensajeSweetAlert.error);
+            
+            Mensaje = $"{await jsruntime.Error("Error", mensaje, TipoMensajeSweetAlert.error)}";
+        }
+    }
+
+
+
+    // private async Task BuscarPorNumero(ChangeEventArgs e)
+    // {
+    //     var Buscar = await http.GetCod<Habitacion>($"api/Habitacion/GetNhab/{numHab}");
+
+    //     if (Buscar == null)
+    //     {
+    //         string Error = await Buscar.ObtenerError();
+    //         await jsruntime.Error("Error", Error, TipoMensajeSweetAlert.error);
+    //     }
+    // }
 }

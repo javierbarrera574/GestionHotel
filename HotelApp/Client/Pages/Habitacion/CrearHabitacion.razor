@@ -1,6 +1,11 @@
 ﻿@page "/crear"
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime jsruntime
+@using HotelApp.Client.Helpers;
+
+
+<!-- Puede ser en la sección de head de tu página Razor o en tu _Imports.razor -->
 
 <div class="p-4">
     <div class="container col-md-6">
@@ -9,28 +14,31 @@
         </div>
     </div>
 </div>
-@code {
+
+@code 
+{
     private Habitacion habitacion = new Habitacion();
-     
+
     private async Task Grabar()
     {
-        HabitacionDTO habitacionDTO = new()
-            {
+        HabitacionDTO habitacionDTO = new()      
+        {
               Nhab = habitacion.Nhab,
               Estado = habitacion.Estado,
-              Camas = habitacion.Camas
-            };
+              Camas = habitacion.Camas    
+        };
 
         var HTTPRespueta = await http.Post<HabitacionDTO>("api/habitacion", habitacionDTO);
-
+        
         if (HTTPRespueta.Error)
         {
-            var body = HTTPRespueta.HttpResponseMessage;
+            string MensajeError = await HTTPRespueta.ObtenerError();
+            await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error);
         }
 
         navigationManager.NavigateTo("/");
     }
-
+  
     private void Cancelar()
     {
         navigationManager.NavigateTo("/");

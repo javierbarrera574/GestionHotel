@@ -19,5 +19,7 @@ namespace Reservas.BData.Data.Entity
 
         [Required(ErrorMessage = "El DniPersona es Obligatorio")]
         public int DniPersona { get; set; }
+        [Required(ErrorMessage ="El número de habitación del huesped es obligatorio")]
+        public int Habitacionnumero { get; set; }
     }
 }

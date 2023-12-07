@@ -1,12 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Reservas.BData.Data.Entity;
-using System.Reflection.Emit;
-using System.Collections.Generic;
-using System;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Reflection.Metadata;
-using System.Diagnostics;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Reservas.BData.Data.Entity;
+using System.ComponentModel;
+using System.Globalization;
 
 namespace Reservas.BData
 {
@@ -17,8 +14,7 @@ namespace Reservas.BData
 		public DbSet<Huesped> Huespedes => Set<Huesped>();
 		public DbSet<Habitacion> Habitaciones => Set<Habitacion>();
 		public DbSet<Reserva> Reservas => Set<Reserva>();
-       
-        public DbSet<Persona> Personas => Set<Persona>();
+		public DbSet<Persona> Personas => Set<Persona>();
 		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		{ }
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -29,7 +25,7 @@ namespace Reservas.BData
 				o.Property(b => b.Nhab);
 				o.Property(b => b.Camas);
 				o.Property(b => b.Estado);
-			
+
 			});
 
 			modelBuilder.Entity<Persona>(o =>
@@ -52,15 +48,15 @@ namespace Reservas.BData
 				o.Property(b => b.Checkin);
 				o.Property(b => b.DniPersona);
 			});
-            modelBuilder.Entity<Reserva>(o =>
-            {
-                o.HasKey(b => b.Id);
-                o.Property(b => b.NroReserva);
-                o.Property(b => b.Fecha_inicio);
-                o.Property(b => b.Fecha_fin);
-                o.Property(b => b.Dni);
+			modelBuilder.Entity<Reserva>(o =>
+			{
+				o.HasKey(b => b.Id);
+				o.Property(b => b.NroReserva);
+				o.Property(b => b.Fecha_inicio);
+				o.Property(b => b.Fecha_fin);
+				o.Property(b => b.Dni);
 				o.Property(b => b.nhabs);
-                o.Property(b => b.DniHuesped)
+				o.Property(b => b.DniHuesped)
 				.HasConversion(
 				v => string.Join(",", v),
 				v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList())
@@ -69,7 +65,21 @@ namespace Reservas.BData
 				(c1, c2) => c1.SequenceEqual(c2),
 				c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
 				c => c.ToList()));
-            });
-        }
+			});
+
+			modelBuilder
+				.Entity<Habitacion>()
+				.HasOne(c => c.Huesped)
+				.WithOne(c => c.Habitacion)
+				.HasForeignKey<Huesped>(c => c.HabitacionId)
+				.IsRequired(false);
+
+			modelBuilder
+				.Entity<Persona>()
+				.HasOne(p => p.Huesped)
+				.WithOne(p => p.Persona)
+				.HasForeignKey<Huesped>(p => p.PersonaId)
+				.IsRequired(false);
+		}       
     }
 }

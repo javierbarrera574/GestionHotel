@@ -1,6 +1,8 @@
 ﻿@page "/persona/editar/{personaid:int}"
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime js
+@using HotelApp.Client.Helpers;
 
 <div class="p-4">
     <div class="container col-md-6">
@@ -40,7 +42,8 @@
         var respuesta = await http.Put<Persona>($"api/Persona/{personaid}", persona);
         if (respuesta.Error)
         {
-            var body = respuesta.HttpResponseMessage;
+            Mensaje = await respuesta.ObtenerError();
+            await js.Error("Error", Mensaje, TipoMensajeSweetAlert.error);
         }
 
         navigationManager.NavigateTo("/");

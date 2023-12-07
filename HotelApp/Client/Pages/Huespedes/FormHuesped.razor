@@ -36,6 +36,13 @@
             <ValidationMessage For="@(() => huesp.DniPersona)" />
         </div>
     </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Número de habitación</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@huesp.HabitacionNumero" />
+            <ValidationMessage For="@(() => huesp.HabitacionNumero)" />
+        </div>
+    </div>
 
     <button class="btn btn-primary" type="submit">Aceptar</button>
     <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
@@ -43,9 +50,10 @@
 
 </EditForm>
 
-@code {
+@code 
+{
     [Parameter] public Huesped huesp { get; set; } = new Huesped();
     [Parameter] public EventCallback onValidSubbmit { get; set; }
     [Parameter] public EventCallback onCancel { get; set; }
-    [Parameter] public EventCallback onGuardarYRecargar { get; set; }
+    [Parameter] public EventCallback onGuardarYRecargar { get; set; }    
 }

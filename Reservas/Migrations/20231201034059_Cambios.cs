@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Reservas.BData.Migrations
 {
     /// <inheritdoc />
-    public partial class BD : Migration
+    public partial class Cambios : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -27,23 +27,6 @@ namespace Reservas.BData.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Huespedes",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Dni = table.Column<int>(type: "int", nullable: false),
-                    Nombres = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Apellidos = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Checkin = table.Column<bool>(type: "bit", nullable: false),
-                    DniPersona = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Huespedes", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Personas",
                 columns: table => new
                 {
@@ -55,7 +38,8 @@ namespace Reservas.BData.Migrations
                     Correo = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Telefono = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     NumTarjeta = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    NumHab = table.Column<int>(type: "int", nullable: false)
+                    NumHab = table.Column<int>(type: "int", nullable: false),
+                    EsHuespedyReservante = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,8 +53,8 @@ namespace Reservas.BData.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     NroReserva = table.Column<int>(type: "int", nullable: false),
-                    Fecha_inicio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Fecha_fin = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Fecha_inicio = table.Column<DateTime>(type: "date", nullable: false),
+                    Fecha_fin = table.Column<DateTime>(type: "date", nullable: false),
                     Dni = table.Column<int>(type: "int", nullable: false),
                     DniHuesped = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     nhabs = table.Column<int>(type: "int", nullable: false)
@@ -79,22 +63,66 @@ namespace Reservas.BData.Migrations
                 {
                     table.PrimaryKey("PK_Reservas", x => x.Id);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "Huespedes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Dni = table.Column<int>(type: "int", nullable: false),
+                    Nombres = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Apellidos = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Checkin = table.Column<bool>(type: "bit", nullable: false),
+                    DniPersona = table.Column<int>(type: "int", nullable: false),
+                    HabitacionNumero = table.Column<int>(type: "int", nullable: false),
+                    HabitacionId = table.Column<int>(type: "int", nullable: true),
+                    PersonaId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Huespedes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Huespedes_Habitaciones_HabitacionId",
+                        column: x => x.HabitacionId,
+                        principalTable: "Habitaciones",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Huespedes_Personas_PersonaId",
+                        column: x => x.PersonaId,
+                        principalTable: "Personas",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Huespedes_HabitacionId",
+                table: "Huespedes",
+                column: "HabitacionId",
+                unique: true,
+                filter: "[HabitacionId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Huespedes_PersonaId",
+                table: "Huespedes",
+                column: "PersonaId",
+                unique: true,
+                filter: "[PersonaId] IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Habitaciones");
-
-            migrationBuilder.DropTable(
                 name: "Huespedes");
 
             migrationBuilder.DropTable(
-                name: "Personas");
+                name: "Reservas");
 
             migrationBuilder.DropTable(
-                name: "Reservas");
+                name: "Habitaciones");
+
+            migrationBuilder.DropTable(
+                name: "Personas");
         }
     }
 }

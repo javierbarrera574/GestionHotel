@@ -1,6 +1,9 @@
 ﻿@page "/huespedes"
+@using Microsoft.AspNetCore.SignalR.Client;
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime js
+@using HotelApp.Client.Helpers
 
 
 <PageTitle>Huespedes</PageTitle>
@@ -11,7 +14,7 @@
 
 <div class="bg-fondo vh-100 p-3 container overflow-auto">
     <div class="m-2">
-        <a class="btn btn-success d-inline-block mb-4 rounded" href="crear/huesped"><i class="order-0 oi oi-person"></i> Crear Huesped
+        <a class="btn btn-success d-inline-block mb-4 rounded" href="crear/huesped"><i class="order-0 oi oi-person"></i> Crear húesped
         </a>
     </div>
     <div class="container-fluid">
@@ -20,22 +23,23 @@
         <label class="mb-2 fw-bold color-primario">Buscar por DNI:</label>
         <div class=" d-flex justify-content-between">
             <InputNumber type="text" class="w-50" @bind-Value="dniBusqueda" />
-            <button class="btn btn-primary" @onclick="BuscarPorDNI">Buscar</button>
-                @if (huesped != null)
-                {
-                    <button class="btn btn-secondary" @onclick="MostrarTodos">Mostrar Todos</button>
-                }
+            <button class="btn btn-primary" @onclick="BuscarPorDNI">Buscar</button>              
+            @if (huesped != null)          
+            {             
+                <button class="btn btn-secondary" @onclick="MostrarTodos">Mostrar todos los húespedes</button>           
+            }
         </div>
     </div>
         <div class="table-responsive">
             <table class="table table-hover table-striped shadow" style="width: 100%;">
                 <thead class="bg-primary text-white text-center fw-bolder">
                     <tr>
-                        <th scope="col">Nombre Completo</th>
+                        <th scope="col">Nombre completo</th>
                         <th scope="col">DNI</th>
-                        <th scope="col">Checkin</th>
+                        <th scope="col">Check-In</th>
                         <th scope="col">DNI Titular</th>
                         <th scope="col">Acción</th>
+                        <th scope="col">Número de habitación</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,7 +65,7 @@
                                     <td class="p-3 text-center text-dark-100">@item.Nombres @item.Apellidos</td>
                                     <td class="p-3 text-center text-dark-100">@item.Dni</td>
                                     <td class="p-3 text-center text-dark-100">
-                                        @if (item.Checkin)
+                                        @if (item.Checkin) @*Significa que la habitación esta "ocupada"*@
                                         {
                                             <span class="verde">
                                                 <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -70,7 +74,7 @@
                                                 </svg>
                                             </span>
                                         }
-                                        else
+                                        else if (!item.Checkin)@*Significa que la habitación esta "disponible"*@
                                         {
                                             <span class="rojo">
                                                 <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -89,6 +93,7 @@
                                         </button>
                                         <button class="btn btn-primary d-inline-block d-inline-block" @onclick="()=>Editar(item.Id)"><i class="oi oi-pencil"></i></button>
                                     </td>
+                                    <td class="p-3 text-center text-dark-100">@item.HabitacionNumero</td>
                                 </tr>
                             }
                         }
@@ -106,7 +111,7 @@
     Huesped huesped;
     bool Error = false;
     string Mensaje = "";
-
+    public int id;
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -131,11 +136,20 @@
     {
         huespedBorrar = hspBorrar;
 
-        var respuesta = await http.Delete($"api/Huesped/{huespedBorrar.Id}");
-        if (respuesta.Error)
+        string MensajeConfirmacion = $"¿Desea borrar el húesped: {hspBorrar.Nombres} {hspBorrar.Apellidos}?";
+
+        if (await js.Confirmar("Confirmar",MensajeConfirmacion, TipoMensajeSweetAlert.question))
         {
-            var body = "Error, no se pudo borrar";
+            await http.Delete($"api/Huesped/{huespedBorrar.Id}");
+            await Leer();
         }
+        else
+        {
+            var response = await http.Delete($"api/Huesped/{id}");
+            Mensaje = await response.ObtenerError();
+            await js.Error("Error", Mensaje, TipoMensajeSweetAlert.error); 
+        }
+
         huespedBorrar = null;
         await Leer();
     }
@@ -169,16 +183,15 @@
         huesped = null;
         await Leer(); // Vuelve a cargar la lista original de huéspedes
     }
-
     private async Task MarcarCheckin(int id)
-    {
+    {           
         var huesped = huespedes.FirstOrDefault(h => h.Id == id);
         if (huesped != null)
         {
             huesped.Checkin = !huesped.Checkin;
 
             // Realiza una solicitud PUT al controlador para actualizar el checkin
-            var respuesta = await http.Put<Huesped>($"api/huesped/{id}", huesped);
+            var respuesta = await http.Put<Huesped>($"api/huesped/PutFuncional2/{id}", huesped);                      
 
             if (respuesta.Error)
             {
@@ -186,5 +199,6 @@
                 var body = respuesta.HttpResponseMessage;
             }
         }
-    }
+        StateHasChanged();
+    } 
 }

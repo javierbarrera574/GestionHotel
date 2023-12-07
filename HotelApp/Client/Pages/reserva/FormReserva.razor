@@ -18,7 +18,7 @@
 
 
     <div class="form-group">
-        <label class="mb-2 fw-bold color-primario">DNI de Huéspedes</label>
+        <label class="mb-2 fw-bold color-primario">DNI de huéspedes</label>
         <div class="mb-2">
 
             @foreach (int dni in dniHuespedes)
@@ -40,7 +40,7 @@
 
     <div class="form-group">
         <label class="mb-2 fw-bold color-primario">Fecha inicio</label>
-        <div class="mb-2" >
+        <div class="mb-2">
             <MatDatePicker @bind-Value="@res.Fecha_inicio" Format="yyyy-MM-dd"/>
             <ValidationMessage For="@(() => res.Fecha_inicio)" onchange="@LeerHabs()" />
         </div>
@@ -56,7 +56,7 @@
 
     <div class="form-group ">
         <label class="mb-2 fw-bold color-primario">Numero de habitacion</label>
-        <InputSelect class="form-control mb-4" @bind-Value="res.nhabs" key="@(res.Fecha_inicio.ToString("yyyyMMdd") + res.Fecha_fin.ToString("yyyyMMdd"))">
+        <InputSelect class="form-control mb-4" @bind-Value="res.nhabs" key="@(res.Fecha_inicio.ToString("yyyyy/MM/dd") + res.Fecha_fin.ToString("yyyyy/MM/dd"))">
             <option value="">Numero de Habitacion</option>
             @foreach (var habitacion in habsDisponibles)
             {
@@ -65,14 +65,19 @@
         </InputSelect>
     </div>
 
-
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Estado de la habitación</label>
+        <div class="mb-2">
+            <InputCheckbox @bind-Value="res.EstadisponibleUoCupada" />
+            <ValidationMessage For="@(() => res.EstadisponibleUoCupada)" />
+        </div>
+    </div>
     <button class="btn btn-primary" type="submit">Aceptar</button>
     <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
 </EditForm>
 
-
-@code {
-
+@code 
+{
     [Parameter] public Reserva res { get; set; } = new Reserva();
     [Parameter] public EventCallback onValidSubbmit { get; set; }
     [Parameter] public EventCallback onCancel { get; set; }
@@ -121,10 +126,10 @@
 
                 // Filtrar habitaciones que no tienen reservas que se superponen con el período especificado
                 habsDisponibles = habitaciones.Where(
-                    habitacion => habitacion.Estado != "reparacion" 
-                    &&!reservas.Any(reserva => reserva.nhabs == habitacion.Nhab 
-                    &&(res.Fecha_inicio.Date < reserva.Fecha_fin.Date 
-                    && res.Fecha_fin.Date >= reserva.Fecha_inicio.Date))).ToList();
+                    habitacion => habitacion.Estado.ToString() == "disponible"
+                    && !reservas.Any(reserva => reserva.nhabs == habitacion.Nhab
+                    && (res.Fecha_inicio < reserva.Fecha_fin
+                    && res.Fecha_fin >= reserva.Fecha_inicio))).ToList();
             }
             else
             {

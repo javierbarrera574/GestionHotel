@@ -139,7 +139,7 @@ label {
 .enlace-grande {
     width: 100px; /* Ancho del contenedor */
     height: 25px; /* Altura del contenedor */
-    background-color: #007bff; /* Color de fondo del contenedor */
+    background-color: red; /* Color de fondo del contenedor */
     display: inline-block; /* Esto permite que el contenedor abarque solo el ancho necesario del contenido */
     text-align: center; /* Centra el contenido en el contenedor */
     line-height: 15px; /* Alinea verticalmente el contenido en el centro */

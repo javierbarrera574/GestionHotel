@@ -44,10 +44,18 @@
             <ValidationMessage For="@(() => pers.NumTarjeta)" />
         </div>
     </div>
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">¿Es huésped y reservante a la vez?</label>
+        <div class="mb-2">
+            <InputCheckbox @bind-Value="pers.EsHuespedyReservante" />
+            <ValidationMessage For="@(() => pers.EsHuespedyReservante)" />
+        </div>
+    </div>
+
     <button class="btn btn-primary" type="submit">Aceptar</button>
     <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
 </EditForm>
-
 
 
 @code {

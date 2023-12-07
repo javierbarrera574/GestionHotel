@@ -2,6 +2,8 @@
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
 @using MatBlazor
+@inject IJSRuntime jsruntime
+@using HotelApp.Client.Helpers;
 
 <div class="p-4">
     <div class="container col-md-6 ">
@@ -17,7 +19,7 @@
 <MatDialog @bind-IsOpen="@mostrarModalError" Style="z-index: 1050;">
     <MatDialogTitle>¡Error!</MatDialogTitle>
     <MatDialogContent>
-        <p>Debe ingresar al menos 1 DNI de huésped.</p>
+        <p>Debe ingresar al menos un DNI de huésped.</p>
     </MatDialogContent>
     <MatDialogActions>
         <MatButton OnClick="@CerrarModal">Cerrar</MatButton>
@@ -36,6 +38,8 @@
 
     private async Task Grabar()
     {
+
+
         if (dniHuespedes.Count() < 1)
         {
             mostrarModalError = true;
@@ -45,15 +49,23 @@
             try
             {
                 bool reservaValida = true; // Inicialmente, consideramos que la reserva es válida
-                ReservaDTO reservaDTO = new()
-                    {
-                        NroReserva = reserva.NroReserva,
-                        Dni = reserva.Dni,
-                        Fecha_fin = reserva.Fecha_fin,
-                        Fecha_inicio = reserva.Fecha_inicio,
-                        Nhabs = reserva.nhabs,
-                        Dns = dniHuespedes
-                    };
+                ReservaDTO reservaDTO = new()                   
+                {                     
+                    NroReserva = reserva.NroReserva,                    
+                    Dni = reserva.Dni,                  
+                    Fecha_fin = reserva.Fecha_fin,                     
+                    Fecha_inicio = reserva.Fecha_inicio,                     
+                    Nhabs = reserva.nhabs,          
+                    EstaDisponibleuOCupada = reserva.EstadisponibleUoCupada,
+                    Dns = dniHuespedes 
+                };
+                var HTTPResponse1 = await http.Post<ReservaDTO>("api/Reservar", reservaDTO);
+                if (HTTPResponse1.Error)
+                {
+                    string MensajeError = await HTTPResponse1.ObtenerError();
+                    await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error);
+                }
+
 
                 Console.WriteLine(reservaValida);
                 if (reservaValida == true)
@@ -61,11 +73,7 @@
                     var HTTPResponse = await http.Post<ReservaDTO>("api/Reservar", reservaDTO);
                     navigationManager.NavigateTo("/reserva");
                 }
-                else
-                {
-                    mostrarMensajeError = true;
-                    mensajeError = "Se produjo un error inesperado, verifique los datos cargados y que concuerden con los cargados previamente ";
-                }
+              
 
             }
             catch (Exception ex)

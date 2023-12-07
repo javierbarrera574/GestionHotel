@@ -1,3 +1,4 @@
+using HotelApp.Server.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Reservas.BData;
@@ -17,18 +18,19 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+builder.Services.AddSignalR();
 builder.Services.AddDbContext<Context>(opciones => opciones.UseSqlServer("name=Conn"));
 
 builder.Services.AddSwaggerGen(c =>
-c.SwaggerDoc("v1", new OpenApiInfo { Title = "Habitaciones", Version = "v1" })
-);
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Server de Gestión de hotel", Version = "v1" });
+});
+
+
 builder.Services.AddControllersWithViews().AddJsonOptions(x =>
 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
-
 var app = builder.Build();
-
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -55,5 +57,9 @@ app.UseCors("AllowLocalhost");
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
-
+app.MapHub<ActualizarEstadoHabitacionPorHuesped>("/ActualizarEstadoHabitacionEnTiempoReal");
+app.MapHub<ActualizarEstadoHabitacionPorHuesped>("/EstadoHabitacionPostHub");
+app.MapHub<ReservaHub>("/ReservaEstadoHabitacionPost");
+app.MapHub<ReservaHub>("/ReservaEstadoHabitacionPut");
+app.MapHub<HabitacionHub>("/HabitacionHubCheckIn");
 app.Run();

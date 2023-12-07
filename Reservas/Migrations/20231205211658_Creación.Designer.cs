@@ -12,8 +12,8 @@ using Reservas.BData;
 namespace Reservas.BData.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20231030122048_BD")]
-    partial class BD
+    [Migration("20231205211658_Creación")]
+    partial class Creación
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -70,12 +70,29 @@ namespace Reservas.BData.Migrations
                     b.Property<int>("DniPersona")
                         .HasColumnType("int");
 
+                    b.Property<int?>("HabitacionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HabitacionNumero")
+                        .HasColumnType("int");
+
                     b.Property<string>("Nombres")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("PersonaId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("HabitacionId")
+                        .IsUnique()
+                        .HasFilter("[HabitacionId] IS NOT NULL");
+
+                    b.HasIndex("PersonaId")
+                        .IsUnique()
+                        .HasFilter("[PersonaId] IS NOT NULL");
 
                     b.ToTable("Huespedes");
                 });
@@ -99,6 +116,9 @@ namespace Reservas.BData.Migrations
 
                     b.Property<int>("Dni")
                         .HasColumnType("int");
+
+                    b.Property<bool>("EsHuespedyReservante")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Nombres")
                         .IsRequired()
@@ -138,6 +158,9 @@ namespace Reservas.BData.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("EstadisponibleUoCupada")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("Fecha_fin")
                         .HasColumnType("datetime2");
 
@@ -153,6 +176,31 @@ namespace Reservas.BData.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Reservas");
+                });
+
+            modelBuilder.Entity("Reservas.BData.Data.Entity.Huesped", b =>
+                {
+                    b.HasOne("Reservas.BData.Data.Entity.Habitacion", "Habitacion")
+                        .WithOne("Huesped")
+                        .HasForeignKey("Reservas.BData.Data.Entity.Huesped", "HabitacionId");
+
+                    b.HasOne("Reservas.BData.Data.Entity.Persona", "Persona")
+                        .WithOne("Huesped")
+                        .HasForeignKey("Reservas.BData.Data.Entity.Huesped", "PersonaId");
+
+                    b.Navigation("Habitacion");
+
+                    b.Navigation("Persona");
+                });
+
+            modelBuilder.Entity("Reservas.BData.Data.Entity.Habitacion", b =>
+                {
+                    b.Navigation("Huesped");
+                });
+
+            modelBuilder.Entity("Reservas.BData.Data.Entity.Persona", b =>
+                {
+                    b.Navigation("Huesped");
                 });
 #pragma warning restore 612, 618
         }

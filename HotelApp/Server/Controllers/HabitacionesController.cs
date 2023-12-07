@@ -2,16 +2,16 @@
 using HotelApp.Shared.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Reservas.BData;
 using Reservas.BData.Data.Entity;
+using System.ComponentModel.DataAnnotations;
 
 namespace HotelApp.Server.Controllers
 {
     [ApiController]
     [Route("api/Habitacion")]
     
-    //
-
     public class HabitacionesController : ControllerBase
     {
         private readonly Context context;
@@ -21,11 +21,10 @@ namespace HotelApp.Server.Controllers
             context = dbcontext;
         }
 
-
         [HttpGet]
         public async Task<ActionResult<List<Habitacion>>> Get()
-        {
-            var habitaciones = await context.Habitaciones.ToListAsync();
+        {  
+            var habitaciones = await context.Habitaciones.ToListAsync();       
             return habitaciones;
         }
 
@@ -55,15 +54,32 @@ namespace HotelApp.Server.Controllers
             return buscar;
         }
 
+        [HttpGet("Filtro")]
+        public async Task<ActionResult<Habitacion>> GetFilter([Required] int NroHab, string Estado)
+        {
+            var BuscarEso = await context.Habitaciones.FirstOrDefaultAsync(c=>c.Nhab==NroHab && c.Estado==Estado);
+            if (BuscarEso is null )
+            {
+                return NotFound("No se encontro un carajo");
+            }
+            return BuscarEso;
+        }
+
+
         [HttpPost] 
         public async Task<IActionResult> Post(HabitacionDTO habitacionDTO)
         {
 
             var entidad = await context.Habitaciones.FirstOrDefaultAsync(x => x.Nhab == habitacionDTO.Nhab);
 
+            if (habitacionDTO.Nhab <= 0)
+            {
+                return BadRequest("El número de la habitacion no puede ser menor o igual a 0");
+            }
+
             if(entidad != null) // existe una hab con el num ingresado
             {
-                return BadRequest("Ya existe una Habitacion con ese número");
+                return BadRequest($"Ya existe una habitacion con el número: {habitacionDTO.Nhab}");
             }
 
             try {
@@ -76,9 +92,12 @@ namespace HotelApp.Server.Controllers
                 };
                 context.Habitaciones.Add(mdHabitacion);
                 await context.SaveChangesAsync();
-                return Ok();
+                return Ok("Cambios guardados correctamente");
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (Exception) 
+            {
+                return BadRequest("No se pudieron guardar los cambios");
+            }
         }
 
         [HttpPut("{id:int}")]
@@ -92,6 +111,7 @@ namespace HotelApp.Server.Controllers
                 var dbHabitacion = await context.Habitaciones.FirstOrDefaultAsync(e => e.Id == id);
                 if (dbHabitacion != null)
                 {
+                    dbHabitacion.Nhab = habitacionDTO.Nhab;
                     dbHabitacion.Camas = (int)habitacionDTO.Camas;
                     dbHabitacion.Estado = habitacionDTO.Estado;
                     context.Habitaciones.Update(dbHabitacion);
@@ -113,26 +133,6 @@ namespace HotelApp.Server.Controllers
             }
             return Ok(responseApi);
         }
-
-        //[HttpPut("{id:int}")]
-        //public async Task<ActionResult> Put(Habitacion entidad, int id)
-        //{
-        //    if (id != entidad.Id)
-        //    {
-        //        return BadRequest("El id de la Persona no corresponde.");
-        //    }
-
-        //    var existe = await context.Habitaciones.AnyAsync(x => x.Id == id);
-        //    if (!existe)
-        //    {
-        //        return NotFound($"La Personas de id={id} no existe");
-        //    }
-
-        //    context.Update(entidad);
-        //    await context.SaveChangesAsync();
-        //    return Ok();
-        //}
-
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int Id)
@@ -158,13 +158,37 @@ namespace HotelApp.Server.Controllers
             return Ok(responseApi); 
         }
 
-        [HttpPost("AgregarMuchasHabitaciones")]
-
-        public async Task<ActionResult> PostHabitaciones(List<Habitacion> habitaciones)
+        [HttpGet("FiltroFechas/{fechaInicio:DateTime}/{fechaFin:DateTime}")]
+        public ActionResult<IEnumerable<List<Habitacion>>> ObtenerFechasYEstadoSeleccionados([Required]DateTime fechaInicio, [Required]DateTime fechaFin)
         {
-            context.AddRange(habitaciones);
-            await context.SaveChangesAsync();
-            return Ok();
+            if (fechaInicio == DateTime.MinValue || fechaFin == DateTime.MinValue)
+            {
+                return BadRequest("Las fechas de inicio y fin son obligatorias");
+            }
+
+            if (fechaFin.Date < fechaInicio.Date)
+            {
+                return BadRequest("La fecha de egreso no puede ser anterior a la fecha de ingreso");
+            }
+
+            var habitacionesFiltradas = context.Habitaciones
+                .Where(h => h.Estado == "ocupada")
+                .Join(context.Reservas,
+                    habitacion => habitacion.Nhab,
+                    reserva => reserva.nhabs,
+                    (habitacion, reserva) =>
+                    new { Habitacion = habitacion, Reserva = reserva })
+                .Where(r => r.Reserva.Fecha_inicio.Date >= fechaInicio.Date && r.Reserva.Fecha_fin.Date <= fechaFin.Date)
+                .Select(r => r.Habitacion)
+                .ToList();  // Ejecuta la consulta para obtener resultados concretos
+
+            if (!habitacionesFiltradas.Any())
+            {
+                return NotFound("No se encontraron habitaciones para filtrar");
+            }
+
+            return Ok(habitacionesFiltradas);
         }
+
     }
 }

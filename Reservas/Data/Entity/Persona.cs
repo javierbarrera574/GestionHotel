@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Reservas.BData.Data.Entity
 {
-	public class Persona
+    public class Persona
 	{
 		public int Id { get; set; }
 		[Required]
@@ -29,6 +24,8 @@ namespace Reservas.BData.Data.Entity
 		public string NumTarjeta { get; set; }
 		[Required]
         public int NumHab { get; set; }
-
+		[Required]
+        public bool EsHuespedyReservante { get; set; }
+        public Huesped Huesped { get; set; }
     }
 }

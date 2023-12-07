@@ -12,10 +12,12 @@
             <div>
                 <strong>Código Reserva:</strong> @reserva.NroReserva <br />
                 <strong>Número de Habitación:</strong> @reserva.nhabs <br />
+                <strong>Estado de la habitación</strong> @((reserva?.EstadisponibleUoCupada ??false)? "ocupada" : "disponible")<br>
                 <strong>DNI Titular de reserva:</strong> @persona?.Dni <br />
                 <strong>Nombre Titular de reserva:</strong> @persona?.Nombres @persona?.Apellidos <br />
                 <strong>Correo Electrónco: </strong> @persona?.Correo<br>
                 <strong>Numero de tarjeta: </strong> @persona?.NumTarjeta<br>
+                <strong>¿Es húesped y reservante?: </strong> @((persona?.EsHuespedyReservante ?? false) ? "Sí" : "No")<br>
                 <strong>Fecha de Reserva:</strong> Desde @reserva.Fecha_inicio.ToShortDateString() hasta @reserva.Fecha_fin.ToShortDateString() <br />
             </div>
             <div>
@@ -25,8 +27,9 @@
                     @foreach (var huesped in huespedes)
                     {
                         <div class="guest-card">
-                            <strong>Nombre del Huésped:</strong> @huesped?.Nombres @huesped?.Apellidos <br />
-                            <strong>DNI del Huésped:</strong> @huesped?.Dni <br />
+                            <strong>Nombre del huésped:</strong> @huesped?.Nombres @huesped?.Apellidos <br />
+                            <strong>DNI del huésped:</strong> @huesped?.Dni <br />
+                            <strong>Número de habitación del huésped:</strong> @huesped?.HabitacionNumero <br />
                         </div>
                     }
                 }

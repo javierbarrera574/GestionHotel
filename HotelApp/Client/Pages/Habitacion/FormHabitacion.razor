@@ -19,12 +19,13 @@
         <div class="mb-3">
             <InputSelect class="form-control" id="Estado" @bind-Value="@habit.Estado">
                 <option selected value="disponible">Disponible</option>
-                <option value="reparacion">En Reparación</option>
+                <option  value="ocupada">Ocupada</option>
+                <option  value="reparacion">En Reparación</option>
             </InputSelect>
             <ValidationMessage For="@(() => habit.Estado)" />
         </div>
     </div>
-
+    
     <div class="text-center mt-3">
         <button class="btn btn-primary" type="submit">Aceptar</button>
         <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>

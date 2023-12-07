@@ -1,6 +1,8 @@
 ﻿@page "/crear/persona/{NumHab:int}"
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager
+@inject IJSRuntime jsruntime
+@using HotelApp.Client.Helpers;
 
 <div class="p-4">
     <div class="container col-md-6">
@@ -23,16 +25,31 @@
                 Dni = persona.Dni,
                 Telefono = persona.Telefono,
                 NumTarjeta = persona.NumTarjeta,
+                EshuespedYreservante = persona.EsHuespedyReservante
 
          };
         personaDTO.NumHab = NumHab;
 
         var HTTPRespueta = await http.Post<PersonaDTO>("api/Persona", personaDTO);
-
         if (HTTPRespueta.Error)
         {
-            var body = HTTPRespueta.HttpResponseMessage;
+            string MensajeError = await HTTPRespueta.ObtenerError();
+            await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error);
         }
+
+        // // if (HTTPRespueta.Error)
+        // // {
+        // //     string MensajeError = await HTTPRespueta.ObtenerError();
+        // //     await jsruntime.InvokeAsync<string>("alert", MensajeError);
+        // // }
+        // string MensajeError = await HTTPRespueta.ObtenerError();
+
+        // if (await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error))
+        // {
+        //     //string MensajeError = await HTTPRespueta.ObtenerError();
+        //     //await jsruntime.InvokeAsync<string>("alert",MensajeError);
+        //     //await jsruntime.Error("Error", MensajeError, TipoMensajeSweetAlert.error);
+        // }
 
         navigationManager.NavigateTo($" / ");
     }

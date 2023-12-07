@@ -9,7 +9,7 @@ namespace HotelApp.Server.Controllers
 {
     [ApiController]
     [Route("api/Persona")]
-    //
+
     public class PersonaController : ControllerBase
     {
         private readonly Context context;
@@ -61,38 +61,7 @@ namespace HotelApp.Server.Controllers
             }
 
             return buscar;
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Post(PersonaDTO personaDTO)
-        {
-            var entidad = await context.Personas.FirstOrDefaultAsync(x => x.Dni == personaDTO.Dni);
-
-            if (entidad != null) // existe una hab con el num ingresado
-            {
-                return BadRequest("Ya existe un persona con ese DNI");
-            }
-
-            try
-            {
-                var mdPersona = new Persona
-                {
-                    Dni = (int)personaDTO.Dni,
-                    Nombres = personaDTO.Nombres,
-                    Apellidos = personaDTO.Apellidos,
-                    Correo = personaDTO.Correo,
-                    Telefono = personaDTO.Telefono,
-                    NumTarjeta = personaDTO.NumTarjeta,
-                    NumHab = personaDTO.NumHab
-                    
-
-                };
-                context.Personas.Add(mdPersona);
-                await context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception ex) { return BadRequest(ex); }
-        }
+        }    
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Editar(PersonaDTO personaDTO, int id)
@@ -110,6 +79,7 @@ namespace HotelApp.Server.Controllers
                     dbPersona.Telefono = personaDTO.Telefono;
                     dbPersona.NumTarjeta = personaDTO.NumTarjeta;
                     dbPersona.NumHab = personaDTO.NumHab;
+                    dbPersona.EsHuespedyReservante = personaDTO.EshuespedYreservante;
                     context.Personas.Update(dbPersona);
                     await context.SaveChangesAsync();
                     responseApi.EsCorrecto = true;
@@ -154,6 +124,69 @@ namespace HotelApp.Server.Controllers
                 responseApi.Mensaje = ex.Message;
             }
             return Ok(responseApi);
+        }
+
+
+        //Metodo para implementar la función
+
+        [HttpPost]
+        public async Task<IActionResult> Post2(PersonaDTO personaDTO)
+        {
+            using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Validación en el servidor
+                var entidadPersona = await context.Personas
+                    .FirstOrDefaultAsync(x => x.Dni == personaDTO.Dni);
+
+                if (entidadPersona != null)
+                {
+                    // La persona ya existe
+                    return BadRequest($"Ya existe una persona con el DNI N°: {personaDTO.Dni}");
+                }
+
+                // Validación de EsHuespedYReservante
+                if (personaDTO.EshuespedYreservante)
+                {
+                    // Verificar si la persona ya es huésped y reservante
+                    var entidadHuespedReservante = await context.Personas
+                        .FirstOrDefaultAsync(x => x.Dni == personaDTO.Dni && x.EsHuespedyReservante);
+
+                    if (entidadHuespedReservante != null)
+                    {
+                        return BadRequest("La persona ya está registrada como huésped y reservante.");
+                    }
+                }
+
+                // Agregar persona
+                var mdPersona = new Persona
+                {
+                    Dni = (int)personaDTO.Dni,
+                    Nombres = personaDTO.Nombres,
+                    Apellidos = personaDTO.Apellidos,
+                    Correo = personaDTO.Correo,
+                    Telefono = personaDTO.Telefono,
+                    NumTarjeta = personaDTO.NumTarjeta,
+                    NumHab = personaDTO.NumHab,
+                    EsHuespedyReservante = personaDTO.EshuespedYreservante
+                };
+
+                context.Personas.Add(mdPersona);
+                await context.SaveChangesAsync();
+
+                // Commit de la transacción si todo fue exitoso
+                await transaction.CommitAsync();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                // Rollback de la transacción en caso de error
+                await transaction.RollbackAsync();
+
+                return BadRequest(ex);
+            }
         }
     }
 }

@@ -2,7 +2,8 @@
 @inject IHTTPServicio http
 @inject NavigationManager navigationManager;
 @using MatBlazor
-
+@using HotelApp.Client.Helpers;
+@inject IJSRuntime js
 
 <PageTitle>Reserva</PageTitle>
 
@@ -25,6 +26,7 @@
                         <th scope="col">Fecha Inicio</th>
                         <th scope="col">Fecha FIN</th>
                         <th scope="col">Habitacion</th>
+                        <th scope="col">Estado de la habitación</th>
                         <th scope="col">Accion</th>
                     </tr>
                 </thead>
@@ -62,7 +64,8 @@
                                     </td>
                                     <td class="p-3 text-center text-dark-100">@item.Fecha_inicio</td>
                                     <td class="p-3 text-center text-dark-100">@item.Fecha_fin</td>
-                                    <td class="p-3 text-center text-dark-100">@item.nhabs</td>
+                                    <td class="p-3 text-center text-dark-100">@item.nhabs</td>                                                                     
+                                    <td class="p-3 text-center text-dark-100">@((item.EstadisponibleUoCupada) ? "ocupada": "disponible")</td>
                                     <td class="p-3 d-flex justify-content-center align-items-center gap-2 ">
                                         <button class="btn btn-danger d-inline-block mr-1" @onclick="()=>Eliminar(item)"><i class="oi oi-trash"></i></button>
                                         <button class="btn btn-primary d-inline-block" @onclick="()=>Editar(item.Id)"><i class="oi oi-pencil"></i></button>
@@ -109,11 +112,20 @@
     {
         reservaBorrar = reserBorr;
 
-        var respuesta = await http.Delete($"api/Reservar/{reservaBorrar.Id}");
-        if (respuesta.Error)
+        // var respuesta = await http.Delete($"api/Reservar/{reservaBorrar.Id}");
+        // if (respuesta.Error)
+        // {
+        //     var body = "Error, no se pudo borrar";
+        // }
+
+        string MensajeConfirmacion = $"¿Desea borrar la reserva N°: {reserBorr.NroReserva}?";
+
+        if (await js.Confirmar("Confirmar",MensajeConfirmacion, TipoMensajeSweetAlert.question))
         {
-            var body = "Error, no se pudo borrar";
+            await http.Delete($"api/Reservar/{reservaBorrar.Id}");
+            await Leer();
         }
+
         reservaBorrar = null;
         await Leer();
     }
