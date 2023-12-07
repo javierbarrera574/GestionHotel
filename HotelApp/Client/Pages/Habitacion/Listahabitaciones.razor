@@ -1,0 +1,169 @@
+﻿@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<PageTitle>Gestion Hotel</PageTitle>
+
+<div class="bg-fondo vh-100 p-3 container overflow-auto">
+    <div class="botonera text-center d-flex gap-5 justify-content-center mb-4">
+        <a href="/crear" class="btn btn-success text-uppercase fw-bold shadow-sm">
+            <i class="bi bi-plus"></i> + Habitación
+        </a>
+        <button type="button" class="btn btn-light text-uppercase fw-bold shadow-sm">
+            Disponibles:
+            <span class="text-success fw-bold">@habitacionesDisponibles</span>
+        </button>
+        <button type="button" class="btn btn-light text-uppercase fw-bold shadow-sm">
+            Ocupadas:
+            <span class="text-danger fw-bold">@habitacionesNoDisponibles</span>
+        </button>
+        <button type="button" class="btn btn-light text-uppercase fw-bold shadow-sm">
+            Reparación:
+            <span class="color-lila fw-bold">@habitacionesEnMantenimiento</span>
+        </button>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="container my-4 d-flex gap-3 align-items-center">
+                <label for="fechaReserva" class="fw-bold">Filtrar reserva por fecha:</label>
+                <InputDate id="fechaReserva" @bind-Value="fechaSeleccionada" onchange="@ActualizarHabitaciones()" />
+            </div>
+
+            @if (Error)
+            {
+                <p>@Mensaje</p>
+            }
+            else
+            {
+                @if (habitaciones == null)
+                {
+                    <div class="d-flex justify-content-center align-items-center mt-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (habitaciones.Count == 0)
+                {
+                    <p>no existen datos</p>
+                }
+                else
+                {
+                    @foreach (var item in habitaciones)
+                    {
+                        <div class="col-3 mb-4">
+                            <div class="card rounded shadow">
+
+                                <div class="card-header text-uppercase text-center fw-bold" style="background-color: @(item.Estado == "disponible" ? "#4CAF50" : (item.Estado == "ocupada" ? "#ff3333" : (item.Estado == "reparacion" ? "#9C27B0" : "#4CAF50"))); color: white;">
+                                    <p class="mb-1">@item.Nhab</p>
+                                    <p class="mb-0">@item.Estado</p>
+                                </div>
+                                <div class="card-body text-center">
+                                    <p class="fw-bold my-3">Camas: @item.Camas</p>
+                                </div>
+                                <div class="card-footer text-center d-flex  justify-content-between">
+                                    <a class="btn btn-secondary" @onclick="() => IrAPersonas(item.Nhab)">Ver</a>
+                                    <a class="btn btn-primary text-uppercase fw-bold font-xs" href="/habitacion/editar/@item.Id">Editar</a>
+                                    <button class="btn btn-danger text-uppercase fw-bold font-xs" @onclick="()=>Eliminar(item)">Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    List<Habitacion> habitaciones;
+    string Mensaje = "";
+    bool Error;
+    Habitacion habitacionBorrar;
+    DateTime fechaSeleccionada = DateTime.Today;
+    int habitacionesDisponibles;
+    int habitacionesNoDisponibles;
+    int habitacionesEnMantenimiento;
+    private int numHab; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Leer();
+    }
+    private async Task Leer()
+    {
+        var habitacionesRespuesta = await http.Get<List<Habitacion>>("api/Habitacion");
+        Error = habitacionesRespuesta.Error;
+
+        if (!Error)
+        {
+            habitaciones = habitacionesRespuesta.Respuesta;
+
+            var reservasRespuesta = await http.Get<List<Reserva>>("api/Reservar");
+            if (reservasRespuesta.Error)
+            {
+                Mensaje = await reservasRespuesta.ObtenerError();
+                return;
+            }
+
+            var reservas = reservasRespuesta.Respuesta;
+
+            habitacionesDisponibles = 0;
+            habitacionesNoDisponibles = 0;
+            habitacionesEnMantenimiento = 0;
+
+            foreach (var habitacion in habitaciones)
+            {
+                if (habitacion.Estado != "reparacion")
+                {
+                    var reserva = reservas.FirstOrDefault(r =>
+                        r.nhabs == habitacion.Nhab &&
+                        fechaSeleccionada.Date >= r.Fecha_inicio.Date &&
+                        fechaSeleccionada.Date <= r.Fecha_fin.Date
+                    );
+
+                    habitacion.Estado = reserva != null ? "ocupada" : "disponible";
+
+                    if (habitacion.Estado == "disponible")
+                        habitacionesDisponibles++;
+                    else if (habitacion.Estado == "ocupada")
+                        habitacionesNoDisponibles++;
+                    else if (habitacion.Estado == "reparacion")
+                        habitacionesEnMantenimiento++;
+                }
+            }
+        }
+        else
+        {
+            Mensaje = await habitacionesRespuesta.ObtenerError();
+        }
+
+    }
+
+    private async Task Eliminar(Habitacion habBorrar)
+    {
+        habitacionBorrar = habBorrar;
+
+        var respuesta = await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");
+        if (respuesta.Error)
+        {
+            var body = "Error, no se pudo borrar";
+        }
+        habitacionBorrar = null;
+        await Leer();
+    }
+    DateTime fechaAnterior; // Variable para almacenar la fecha anterior
+    private async Task ActualizarHabitaciones()
+    {
+        if (fechaSeleccionada != fechaAnterior)
+        {
+            fechaAnterior = fechaSeleccionada;
+            await Leer();
+            StateHasChanged();
+        }
+    }
+    private void IrAPersonas(int numhabit)
+    {
+        navigationManager.NavigateTo($"/personas/{numhabit}");
+    }
+}

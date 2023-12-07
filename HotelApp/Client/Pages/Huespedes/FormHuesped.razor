@@ -1,0 +1,51 @@
+﻿<EditForm Model="huesp" OnValidSubmit="onValidSubbmit">
+    <DataAnnotationsValidator />
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">DNI</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@huesp.Dni" />
+            <ValidationMessage For="@(() => huesp.Dni)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Nombre</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@huesp.Nombres" />
+            <ValidationMessage For="@(() => huesp.Nombres)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Apellido</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@huesp.Apellidos" />
+            <ValidationMessage For="@(() => huesp.Apellidos)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Checkin</label>
+        <div class="mb-2">
+            <InputCheckbox class="form-check-input" @bind-Value="@huesp.Checkin" />
+            <ValidationMessage For="@(() => huesp.Checkin)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">DNI Persona Titular</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@huesp.DniPersona" />
+            <ValidationMessage For="@(() => huesp.DniPersona)" />
+        </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Aceptar</button>
+    <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
+    <a button class="btn btn-secondary" @onclick="onGuardarYRecargar">Guardar este huésped y cargar otro</a>
+
+</EditForm>
+
+@code {
+    [Parameter] public Huesped huesp { get; set; } = new Huesped();
+    [Parameter] public EventCallback onValidSubbmit { get; set; }
+    [Parameter] public EventCallback onCancel { get; set; }
+    [Parameter] public EventCallback onGuardarYRecargar { get; set; }
+}

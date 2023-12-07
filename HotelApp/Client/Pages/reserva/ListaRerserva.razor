@@ -1,0 +1,136 @@
+﻿@page "/reserva"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager;
+@using MatBlazor
+
+
+<PageTitle>Reserva</PageTitle>
+
+
+<div class="bg-fondo vh-100 p-3 container overflow-auto">
+    
+    <a class="btn btn-success rounded mb-4 m-2" href="/crear/reserva"><i class="oi oi-document"></i> Crear Reserva</a>
+    
+    <div class="container-fluid">
+        
+        <MatTextField Class="mb-4" @bind-Value="@codigoBusqueda" Label="Buscar por Código" @oninput="BuscarPorCodigo"></MatTextField>
+        
+        <div class="table-responsive">
+            <table class="table table-hover table-striped shadow bg-white">
+                <thead class="bg-primary text-white text-center fw-bolder">
+                    <tr>
+                        <th scope="col">Código Reserva</th>
+                        <th scope="col">DNI</th>
+                        <th scope="col">Dni Huesped</th>
+                        <th scope="col">Fecha Inicio</th>
+                        <th scope="col">Fecha FIN</th>
+                        <th scope="col">Habitacion</th>
+                        <th scope="col">Accion</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Error)
+                    {
+                        <tr>@Mensaje</tr>
+                    }
+                    else
+                    {
+                        @if (reservas == null)
+                        {
+                            <tr>Cargando....</tr>
+                        }
+                        else if (reservas.Count == 0)
+                        {
+                            <tr>no existen datos</tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in reservas.Where(r => string.IsNullOrEmpty(codigoBusqueda) || r.NroReserva.ToString().Contains(codigoBusqueda)))
+                            {
+                                <tr>
+                                    <td class="p-3 text-center text-dark-100">@item.NroReserva</td>
+                                    <td class="p-3 text-center text-dark-100">@item.Dni</td>
+                                    <td>
+                                        <InputSelect class="form-control p-2 text-center text-dark-100" id="Estado" @bind-Value="@item.DniHuesped">
+                                            <option class="text-center" disabled selected>DNI de Huéspedes</option>
+                                            @foreach (var dni in item.DniHuesped)
+                                            {
+                                                <option disabled>@dni</option>
+                                            }
+                                        </InputSelect>
+                                    </td>
+                                    <td class="p-3 text-center text-dark-100">@item.Fecha_inicio</td>
+                                    <td class="p-3 text-center text-dark-100">@item.Fecha_fin</td>
+                                    <td class="p-3 text-center text-dark-100">@item.nhabs</td>
+                                    <td class="p-3 d-flex justify-content-center align-items-center gap-2 ">
+                                        <button class="btn btn-danger d-inline-block mr-1" @onclick="()=>Eliminar(item)"><i class="oi oi-trash"></i></button>
+                                        <button class="btn btn-primary d-inline-block" @onclick="()=>Editar(item.Id)"><i class="oi oi-pencil"></i></button>
+                                        <button class="btn btn-info d-inline-block mr-1" @onclick="()=>Ver(item.Id)"><i class="oi oi-eye text-white"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    string codigoBusqueda = "";
+    Reserva reservaBorrar;
+    List<Reserva>? reservas;
+    bool Error = false;
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Leer();
+    }
+
+    private async Task Leer()
+    {
+        var respuesta = await http.Get<List<Reserva>>("api/Reservar");
+        Error = respuesta.Error;
+        if (!respuesta.Error)
+        {
+            reservas = respuesta.Respuesta;
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+    private async Task Eliminar(Reserva reserBorr)
+    {
+        reservaBorrar = reserBorr;
+
+        var respuesta = await http.Delete($"api/Reservar/{reservaBorrar.Id}");
+        if (respuesta.Error)
+        {
+            var body = "Error, no se pudo borrar";
+        }
+        reservaBorrar = null;
+        await Leer();
+    }
+
+    private void Ver(int id)
+    {
+        navigationManager.NavigateTo($"/reservar/ver/{id}");
+    }
+
+    private void Editar(int id)
+    {
+        navigationManager.NavigateTo($"/reservar/editar/{id}");
+    }
+
+    private async Task BuscarPorCodigo(ChangeEventArgs e)
+    {
+        codigoBusqueda = e.Value.ToString();
+        await Leer();
+    }
+}

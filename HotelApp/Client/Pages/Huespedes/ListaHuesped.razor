@@ -1,0 +1,190 @@
+﻿@page "/huespedes"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+
+<PageTitle>Huespedes</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="Listado de Huespedes" />
+</HeadContent>
+
+<div class="bg-fondo vh-100 p-3 container overflow-auto">
+    <div class="m-2">
+        <a class="btn btn-success d-inline-block mb-4 rounded" href="crear/huesped"><i class="order-0 oi oi-person"></i> Crear Huesped
+        </a>
+    </div>
+    <div class="container-fluid">
+
+    <div class="mb-3">
+        <label class="mb-2 fw-bold color-primario">Buscar por DNI:</label>
+        <div class=" d-flex justify-content-between">
+            <InputNumber type="text" class="w-50" @bind-Value="dniBusqueda" />
+            <button class="btn btn-primary" @onclick="BuscarPorDNI">Buscar</button>
+                @if (huesped != null)
+                {
+                    <button class="btn btn-secondary" @onclick="MostrarTodos">Mostrar Todos</button>
+                }
+        </div>
+    </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped shadow" style="width: 100%;">
+                <thead class="bg-primary text-white text-center fw-bolder">
+                    <tr>
+                        <th scope="col">Nombre Completo</th>
+                        <th scope="col">DNI</th>
+                        <th scope="col">Checkin</th>
+                        <th scope="col">DNI Titular</th>
+                        <th scope="col">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Error)
+                    {
+                        <tr>@Mensaje</tr>
+                    }
+                    else
+                    {
+                        @if (huespedes == null)
+                        {
+                            <tr>Cargando....</tr>
+                        }
+                        else if (huespedes.Count == 0)
+                        {
+                            <tr>no existen datos</tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in huespedes)
+                            {
+                                <tr class="bg-white">
+                                    <td class="p-3 text-center text-dark-100">@item.Nombres @item.Apellidos</td>
+                                    <td class="p-3 text-center text-dark-100">@item.Dni</td>
+                                    <td class="p-3 text-center text-dark-100">
+                                        @if (item.Checkin)
+                                        {
+                                            <span class="verde">
+                                                <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                                    <circle cx="10" cy="10" r="10" fill="green" />
+                                                    <text x="5" y="15" font-size="12" fill="white">✓</text>
+                                                </svg>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="rojo">
+                                                <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+                                                    <circle cx="10" cy="10" r="10" fill="red" />
+                                                    <text x="5" y="15" font-size="12" fill="white">✗</text>
+                                                </svg>
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td class="p-3 text-center text-dark-100">@item.DniPersona</td>
+                                    <td class="p-3 d-flex justify-content-center align-items-center gap-2">
+                                        <button class="btn btn-danger d-inline-block mr-1" @onclick="()=>Eliminar(item)"><i class="oi oi-trash"></i></button>
+                                        <button class="btn btn-marcar-checkin" @onclick="()=>MarcarCheckin(item.Id)">
+                                            <i class="icon-check fas fa-check"></i> <!-- Icono de "check" de FontAwesome -->
+                                        </button>
+                                        <button class="btn btn-primary d-inline-block d-inline-block" @onclick="()=>Editar(item.Id)"><i class="oi oi-pencil"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    int dniBusqueda;
+    Huesped huespedBorrar;
+    List<Huesped> huespedes;
+    Huesped huesped;
+    bool Error = false;
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Leer();
+    }
+
+    private async Task Leer()
+    {
+        var respuesta = await http.Get<List<Huesped>>("api/Huesped");
+        Error = respuesta.Error;
+        if (!respuesta.Error)
+        {
+            huespedes = respuesta.Respuesta;
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+    private async Task Eliminar(Huesped hspBorrar)
+    {
+        huespedBorrar = hspBorrar;
+
+        var respuesta = await http.Delete($"api/Huesped/{huespedBorrar.Id}");
+        if (respuesta.Error)
+        {
+            var body = "Error, no se pudo borrar";
+        }
+        huespedBorrar = null;
+        await Leer();
+    }
+
+    private void Editar(int huespedId)
+    {
+        navigationManager.NavigateTo($"/huesped/editar/{huespedId}");
+    }
+
+    private async Task BuscarPorDNI()
+    {
+        var respuesta = await http.GetCod<Huesped>($"api/Huesped/GetDni/{dniBusqueda}");
+        Error = respuesta.Error;
+        if (!respuesta.Error)
+        {
+            huesped = respuesta.Respuesta;
+
+            // Limpia la lista actual y agrega el resultado de la búsqueda
+            huespedes.Clear();
+            huespedes.Add(huesped);
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+    private async Task MostrarTodos()
+    {
+        dniBusqueda = 0;
+        huesped = null;
+        await Leer(); // Vuelve a cargar la lista original de huéspedes
+    }
+
+    private async Task MarcarCheckin(int id)
+    {
+        var huesped = huespedes.FirstOrDefault(h => h.Id == id);
+        if (huesped != null)
+        {
+            huesped.Checkin = !huesped.Checkin;
+
+            // Realiza una solicitud PUT al controlador para actualizar el checkin
+            var respuesta = await http.Put<Huesped>($"api/huesped/{id}", huesped);
+
+            if (respuesta.Error)
+            {
+                // Maneja el error si es necesario
+                var body = respuesta.HttpResponseMessage;
+            }
+        }
+    }
+}

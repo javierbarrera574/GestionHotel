@@ -1,0 +1,121 @@
+﻿@page "/personas/{NumHab:int}"
+@inject NavigationManager navigationManager
+@inject IHTTPServicio http
+
+<PageTitle>PERSONAS</PageTitle>
+
+<div class="bg-fondo vh-100 p-3 container overflow- auto">
+
+    <div class="m-2">
+        <a class="btn btn-success d-inline-block mb-4 rounded" @onclick="()=>CrearPersona(NumHab)"><i class="oi oi-person"></i> Crear Persona</a>
+    </div>
+
+    <div class="container-fluid">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped shadow bg-white">
+                <thead class="bg-primary text-white text-center fw-bolder">
+                    <tr>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Apellido</th>
+                        <th scope="col">DNI</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Número de Tarjeta</th>
+                        <th scope="col">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Error)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center">No se cargaron personas para esta habitación aún.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @if (personas == null || personas.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center">No se cargaron personas.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in personas)
+                            {
+                                if (NumHab == item.NumHab)
+                                {
+                                    <tr class="bg-white">
+                                        <td class="p-3 text-center text-dark-100">@item.Nombres</td>
+                                        <td class="p-3 text-center text-dark-100">@item.Apellidos</td>
+                                        <td class="p-3 text-center text-dark-100">@item.Dni</td>
+                                        <td class="p-3 text-center text-dark-100">@item.Correo</td>
+                                        <td class="p-3 text-center text-dark-100">@item.NumTarjeta</td>
+                                        <td class="p-3 d-flex justify-content-center align-items-center gap-2">
+                                            <button class="btn btn-danger d-inline-block mr-1" @onclick="()=>Eliminar(item)"><i class="oi oi-trash"></i></button>
+                                            <button class="btn btn-primary d-inline-block" @onclick="()=>Editar(item.Id)"><i class="oi oi-pencil"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public int NumHab { get; set; }
+    Persona personaBorrar;
+    List<Persona>? personas;
+    bool Error = false;
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Leer();
+    }
+
+    private async Task Leer()
+    {
+        var respuesta = await http.Get<List<Persona>>($"api/Persona/GetNumHab/{NumHab}");
+        Error = respuesta.Error;
+
+        if (!respuesta.Error)
+        {
+            personas = respuesta.Respuesta;
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+    private async Task Eliminar(Persona persBorrar)
+    {
+        personaBorrar = persBorrar;
+
+        var respuesta = await http.Delete($"api/Persona/{personaBorrar.Id}");
+        if (respuesta.Error)
+        {
+            Mensaje = "Error, no se pudo borrar";
+        }
+        else
+        {
+            personaBorrar = null;
+            await Leer();
+        }
+    }
+
+    private void Editar(int personId)
+    {
+        navigationManager.NavigateTo($"/persona/editar/{personId}");
+    }
+    private void CrearPersona(int NumHab)
+    {
+        navigationManager.NavigateTo($"/crear/persona/{NumHab}");
+    }
+}

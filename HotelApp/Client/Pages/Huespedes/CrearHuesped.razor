@@ -1,0 +1,47 @@
+﻿@page "/crear/huesped"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormHuesped huesp="huesped" onValidSubbmit="Grabar" onCancel="Cancelar" onGuardarYRecargar="onGuardarYRecargar" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private Huesped huesped = new Huesped();
+
+    private async Task Grabar()
+    {
+        HuespedDTO huespedDTO = new()
+            {
+                Nombres = huesped.Nombres,
+                Apellidos = huesped.Apellidos,
+                Dni = huesped.Dni,
+                Checkin = huesped.Checkin,
+                DniPersona = huesped.DniPersona
+            };
+
+        var HTTPRespueta = await http.Post<HuespedDTO>("api/Huesped", huespedDTO);
+        navigationManager.NavigateTo("/huespedes");
+
+        if (HTTPRespueta.Error)
+        {
+            var body = HTTPRespueta.HttpResponseMessage;
+        }
+
+    }
+
+    private async Task onGuardarYRecargar()
+    {
+        await Grabar(); // Realiza la acción de guardar el huésped actual
+        navigationManager.NavigateTo("/crear/huesped");
+    }
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo("/huespedes");
+    }
+}

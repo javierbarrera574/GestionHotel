@@ -1,0 +1,40 @@
+﻿<EditForm Model="habit" OnValidSubmit="onValidSubbmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario" for="Nhab">Numero de Habitacion</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" id="Nhab" @bind-Value="@habit.Nhab" />
+            <ValidationMessage For="@(() => habit.Nhab)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario" for="Camas">Cantidad de Camas</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" id="Camas" @bind-Value="@habit.Camas" />
+            <ValidationMessage For="@(() => habit.Camas)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario" for="Estado">Estado de Habitacion</label>
+        <div class="mb-3">
+            <InputSelect class="form-control" id="Estado" @bind-Value="@habit.Estado">
+                <option selected value="disponible">Disponible</option>
+                <option value="reparacion">En Reparación</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => habit.Estado)" />
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <button class="btn btn-primary" type="submit">Aceptar</button>
+        <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
+    </div>
+</EditForm>
+
+
+
+@code {
+    [Parameter] public Habitacion habit { get; set; } = new Habitacion();
+    [Parameter] public EventCallback onValidSubbmit { get; set; }
+    [Parameter] public EventCallback onCancel { get; set; }
+}

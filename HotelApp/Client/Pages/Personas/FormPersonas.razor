@@ -1,0 +1,60 @@
+﻿<EditForm Model="pers" OnValidSubmit="onValidSubbmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Nombre</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@pers.Nombres" />
+            <ValidationMessage For="@(() => pers.Nombres)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Apellido</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@pers.Apellidos" />
+            <ValidationMessage For="@(() => pers.Apellidos)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">DNI</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@pers.Dni" />
+            <ValidationMessage For="@(() => pers.Dni)" />
+        </div>
+    </div>
+     <div class="form-group ">
+        <label class="mb-2 fw-bold color-primario">Telefono</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@pers.Telefono" />
+            <ValidationMessage For="@(() => pers.Telefono)" />
+        </div>
+    </div>
+
+    <div class="form-group ">
+        <label class="mb-2 fw-bold color-primario">Correo</label>
+        <div class="mb-2">
+            <InputText class="form-control" @bind-Value="@pers.Correo" />
+            <ValidationMessage For="@(() => pers.Correo)" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Numero de Tarjeta</label>
+        <div class="mb-3">
+            <InputText class="form-control" @bind-Value="@pers.NumTarjeta" />
+            <ValidationMessage For="@(() => pers.NumTarjeta)" />
+        </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Aceptar</button>
+    <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
+</EditForm>
+
+
+
+@code {
+
+    [Parameter] public Persona pers { get; set; } = new Persona();
+    [Parameter] public EventCallback onValidSubbmit { get; set; }
+    [Parameter] public EventCallback onCancel { get; set; }
+
+    
+}

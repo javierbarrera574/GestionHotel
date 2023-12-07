@@ -1,0 +1,73 @@
+﻿@page "/reservar/ver/{IdRes:int}"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager;
+
+<PageTitle>Ver Reserva</PageTitle>
+
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="custom-card">
+        @if (reserva != null)
+        {
+            <h4 class="text-primary">Detalles de la Reserva</h4>
+            <div>
+                <strong>Código Reserva:</strong> @reserva.NroReserva <br />
+                <strong>Número de Habitación:</strong> @reserva.nhabs <br />
+                <strong>DNI Titular de reserva:</strong> @persona?.Dni <br />
+                <strong>Nombre Titular de reserva:</strong> @persona?.Nombres @persona?.Apellidos <br />
+                <strong>Correo Electrónco: </strong> @persona?.Correo<br>
+                <strong>Numero de tarjeta: </strong> @persona?.NumTarjeta<br>
+                <strong>Fecha de Reserva:</strong> Desde @reserva.Fecha_inicio.ToShortDateString() hasta @reserva.Fecha_fin.ToShortDateString() <br />
+            </div>
+            <div>
+                <strong>Huéspedes:</strong>
+                @if (huespedes != null && huespedes.Any())
+                {
+                    @foreach (var huesped in huespedes)
+                    {
+                        <div class="guest-card">
+                            <strong>Nombre del Huésped:</strong> @huesped?.Nombres @huesped?.Apellidos <br />
+                            <strong>DNI del Huésped:</strong> @huesped?.Dni <br />
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-warning">No se han registrado huéspedes aún.</p>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-danger">Reserva no encontrada.</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int IdRes { get; set; }
+    Reserva reserva;
+    Persona persona;
+    List<Huesped> huespedes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var respuesta = await http.Get<Reserva>($"api/Reservar/{IdRes}");
+        if (!respuesta.Error)
+        {
+            reserva = respuesta.Respuesta;
+
+            // Buscar la persona por su DNI
+            var respuestaPersona = await http.Get<Persona>($"api/Persona/GetDni/{reserva.Dni}");
+
+            persona = respuestaPersona?.Error == false ? respuestaPersona.Respuesta : new Persona { Dni = reserva.Dni, Nombres = "No cargado aun, debe hacer el check-in" };
+
+            // Cargar la lista de huéspedes
+            huespedes = new List<Huesped>();
+            foreach (var dniHuesped in reserva.DniHuesped)
+            {
+                var respuestaHuesped = await http.Get<Huesped>($"api/Huesped/GetDni/{dniHuesped}");
+                huespedes.Add(respuestaHuesped?.Error == false ? respuestaHuesped.Respuesta : new Huesped { Dni = dniHuesped, Nombres = "No cargado aun, debe hacer el check-in" });
+            }
+        }
+    }
+}

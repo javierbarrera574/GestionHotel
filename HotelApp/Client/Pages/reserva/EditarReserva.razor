@@ -1,0 +1,64 @@
+﻿@page "/reservar/editar/{IdRes:int}"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormReserva res="reserva" dniHuespedes="dniHuespedes" onValidSubbmit="Grabar" onCancel="Cancelar" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<int> dniHuespedes = new List<int>();
+
+    private Reserva reserva = new Reserva();
+    [Parameter] public int IdRes { get; set; }
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Mostrar();
+    }
+
+    private async Task Mostrar()
+    {
+        var respuesta = await http.Get<Reserva>($"api/Reservar/{IdRes}");
+
+        if (!respuesta.Error)
+        {
+            reserva = respuesta.Respuesta;
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+    private async Task Grabar()
+    {
+        ReservaDTO reservaed = new()
+            {
+                NroReserva = reserva.NroReserva,
+                Dni = reserva.Dni,
+                Fecha_fin = reserva.Fecha_fin,
+                Fecha_inicio = reserva.Fecha_inicio,
+                Nhabs = reserva.nhabs,
+                Dns = dniHuespedes
+            };
+        var respuesta = await http.Put<ReservaDTO>($"api/Reservar/{IdRes}", reservaed);
+        if (respuesta.Error)
+        {
+            var body = respuesta.HttpResponseMessage;
+        }
+
+        navigationManager.NavigateTo("/");
+    }
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo("/reserva");
+    }
+}

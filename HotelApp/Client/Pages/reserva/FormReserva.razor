@@ -1,0 +1,139 @@
+﻿<EditForm Model="res" OnValidSubmit="onValidSubbmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Codigo de reserva</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@res.NroReserva" />
+            <ValidationMessage For="@(() => res.NroReserva)" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">DNI</label>
+        <div class="mb-2">
+            <InputNumber class="form-control" @bind-Value="@res.Dni" />
+            <ValidationMessage For="@(() => res.Dni)" />
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">DNI de Huéspedes</label>
+        <div class="mb-2">
+
+            @foreach (int dni in dniHuespedes)
+            {
+                <div class="d-flex justify-content-between my-1">
+                    <p class="mb-2">@dni</p>
+                    <a class="btn btn-danger" @onclick="() => EliminarDni(dni)">Eliminar</a>
+                </div>
+            }
+
+            <div class="form-group">
+                <div class="input-group-append">
+                    <InputNumber class="form-control mt-2" @bind-Value="@dnis" max="2" />
+                    <a class="btn btn-success mt-2" @onclick="@(()=>AgregarDni(dnis))">Agregar otro DNI</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="mb-2 fw-bold color-primario">Fecha inicio</label>
+        <div class="mb-2" >
+            <MatDatePicker @bind-Value="@res.Fecha_inicio" Format="yyyy-MM-dd"/>
+            <ValidationMessage For="@(() => res.Fecha_inicio)" onchange="@LeerHabs()" />
+        </div>
+    </div>
+
+    <div class="form-group ">
+        <label class="mb-2 fw-bold color-primario">Fecha Fin</label>
+        <div class="mb-2">
+            <MatDatePicker @bind-Value="@res.Fecha_fin" Format="yyyy-MM-dd"/>
+            <ValidationMessage For="@(() => res.Fecha_fin)" onchange="@LeerHabs()" />
+        </div>
+    </div>
+
+    <div class="form-group ">
+        <label class="mb-2 fw-bold color-primario">Numero de habitacion</label>
+        <InputSelect class="form-control mb-4" @bind-Value="res.nhabs" key="@(res.Fecha_inicio.ToString("yyyyMMdd") + res.Fecha_fin.ToString("yyyyMMdd"))">
+            <option value="">Numero de Habitacion</option>
+            @foreach (var habitacion in habsDisponibles)
+            {
+                <option value="@habitacion.Nhab">@habitacion.Nhab</option>
+            }
+        </InputSelect>
+    </div>
+
+
+    <button class="btn btn-primary" type="submit">Aceptar</button>
+    <button class="btn btn-secondary" @onclick="onCancel">Cancelar</button>
+</EditForm>
+
+
+@code {
+
+    [Parameter] public Reserva res { get; set; } = new Reserva();
+    [Parameter] public EventCallback onValidSubbmit { get; set; }
+    [Parameter] public EventCallback onCancel { get; set; }
+    [Parameter] public List<int> dniHuespedes { get; set; } = new List<int>();
+    [Parameter] public List<int> nuevosDNIs { get; set; } = new List<int>();
+    List<Reserva>? reservas;
+    List<Habitacion> habitaciones = new List<Habitacion>();
+    List<Habitacion> habsDisponibles = new List<Habitacion>();
+    string Mensaje = "";
+    bool Error;
+    int dnis;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        res.Fecha_inicio = DateTime.Today;
+        res.Fecha_fin = DateTime.Today;
+        await LeerHabs();
+    }
+
+    private void AgregarDni(int addDni)
+    {
+        dniHuespedes.Add(addDni);
+    }
+
+    private void EliminarDni(int dni)
+    {
+        dniHuespedes.Remove(dni);
+    }
+
+    private async Task LeerHabs()
+    {
+        var respuestaReservas = await http.Get<List<Reserva>>("api/Reservar");
+        Error = respuestaReservas.Error;
+        habsDisponibles.Clear();
+        if (!Error)
+        {
+            var reservas = respuestaReservas.Respuesta;
+
+            var respuestaHabitaciones = await http.Get<List<Habitacion>>("api/Habitacion");
+            Error = respuestaHabitaciones.Error;
+
+            if (!Error)
+            {
+                habitaciones = respuestaHabitaciones.Respuesta;
+
+                // Filtrar habitaciones que no tienen reservas que se superponen con el período especificado
+                habsDisponibles = habitaciones.Where(
+                    habitacion => habitacion.Estado != "reparacion" 
+                    &&!reservas.Any(reserva => reserva.nhabs == habitacion.Nhab 
+                    &&(res.Fecha_inicio.Date < reserva.Fecha_fin.Date 
+                    && res.Fecha_fin.Date >= reserva.Fecha_inicio.Date))).ToList();
+            }
+            else
+            {
+                Mensaje = await respuestaHabitaciones.ObtenerError();
+            }
+        }
+        else
+        {
+            Mensaje = await respuestaReservas.ObtenerError();
+        }
+    }
+}

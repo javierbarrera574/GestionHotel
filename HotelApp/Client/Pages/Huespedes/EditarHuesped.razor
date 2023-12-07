@@ -1,0 +1,50 @@
+﻿@page "/huesped/editar/{huespedId:int}"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormHuesped huesp="huesped" onValidSubbmit="Grabar" onCancel="Cancelar" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private Huesped huesped = new Huesped();
+    [Parameter] public int huespedId { get; set; }
+    string Mensaje = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Mostrar();
+    }
+
+    private async Task Mostrar()
+    {
+        var respuesta = await http.Get<Huesped>($"api/huesped/{huespedId}");
+        if (!respuesta.Error)
+        {
+            huesped = respuesta.Respuesta;
+        }
+        else { Mensaje = await respuesta.ObtenerError(); }
+    }
+
+    private async Task Grabar()
+    {
+        var respuesta = await http.Put<Huesped>($"api/huesped/{huespedId}", huesped);
+        if (respuesta.Error)
+        {
+            var body = respuesta.HttpResponseMessage;
+        }
+
+        navigationManager.NavigateTo("/");
+    }
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo("/huespedes");
+    }
+
+}

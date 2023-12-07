@@ -1,0 +1,46 @@
+﻿@page "/crear/persona/{NumHab:int}"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormPersonas pers="persona" onValidSubbmit="Grabar" onCancel="Cancelar" />
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter]public int NumHab { get; set; }
+    private Persona persona = new Persona();
+
+    private async Task Grabar()
+    {
+        PersonaDTO personaDTO = new()
+        {
+                Nombres = persona.Nombres,
+                Apellidos = persona.Apellidos,
+                Correo = persona.Correo,
+                Dni = persona.Dni,
+                Telefono = persona.Telefono,
+                NumTarjeta = persona.NumTarjeta,
+
+         };
+        personaDTO.NumHab = NumHab;
+
+        var HTTPRespueta = await http.Post<PersonaDTO>("api/Persona", personaDTO);
+
+        if (HTTPRespueta.Error)
+        {
+            var body = HTTPRespueta.HttpResponseMessage;
+        }
+
+        navigationManager.NavigateTo($" / ");
+    }
+
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo($"/");
+    }
+
+}

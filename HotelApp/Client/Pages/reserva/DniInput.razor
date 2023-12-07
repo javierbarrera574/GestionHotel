@@ -1,0 +1,38 @@
+﻿@page "/dniinput"
+
+<h3>Ingresar DNIs</h3>
+
+<div>
+    @for (int i = 0; i < dniList.Count; i++)
+    {
+        <div>
+            <input type="number" class="form-control" @bind="dniList[i]" />
+            <button class="btn btn-danger" @onclick="() => EliminarDni(i)">Eliminar</button>
+        </div>
+    }
+    <button class="btn btn-primary" @onclick="AgregarDni">Agregar DNI</button>
+</div>
+
+<button class="btn btn-success" @onclick="EnviarDnis">Enviar DNIs</button>
+
+@code {
+    private List<int> dniList = new List<int> { 0 }; // Inicialmente, un campo en blanco.
+
+    private void AgregarDni()
+    {
+        dniList.Add(0); // Agregar un nuevo campo en blanco.
+    }
+
+    private void EliminarDni(int index)
+    {
+        dniList.RemoveAt(index);
+    }
+
+    private void EnviarDnis()
+    {
+        // Enviar la lista de DNIs al componente principal
+        OnDniListChanged.InvokeAsync(dniList);
+    }
+
+    [Parameter] public EventCallback<List<int>> OnDniListChanged { get; set; }
+}

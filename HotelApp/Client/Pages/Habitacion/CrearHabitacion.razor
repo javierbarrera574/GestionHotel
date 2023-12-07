@@ -1,0 +1,39 @@
+﻿@page "/crear"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormHabitacion habit="habitacion" onValidSubbmit="Grabar" onCancel="Cancelar" />
+        </div>
+    </div>
+</div>
+@code {
+    private Habitacion habitacion = new Habitacion();
+     
+    private async Task Grabar()
+    {
+        HabitacionDTO habitacionDTO = new()
+            {
+              Nhab = habitacion.Nhab,
+              Estado = habitacion.Estado,
+              Camas = habitacion.Camas
+            };
+
+        var HTTPRespueta = await http.Post<HabitacionDTO>("api/habitacion", habitacionDTO);
+
+        if (HTTPRespueta.Error)
+        {
+            var body = HTTPRespueta.HttpResponseMessage;
+        }
+
+        navigationManager.NavigateTo("/");
+    }
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo("/");
+    }
+
+}

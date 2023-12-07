@@ -1,0 +1,56 @@
+﻿@page "/habitacion/editar/{habitacionid:int}"
+@inject IHTTPServicio http
+@inject NavigationManager navigationManager
+
+<div class="p-4">
+    <div class="container col-md-6">
+        <div class="shadow p-4 bg-white">
+            <FormHabitacion habit="habitacion" onValidSubbmit="Grabar" onCancel="Cancelar" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private Habitacion habitacion = new();
+    [Parameter] public int habitacionid { get; set; }
+    string Mensaje = "";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Mostrar();
+    }
+
+    private async Task Mostrar()
+    {
+        var respuesta = await http.Get<Habitacion>($"api/Habitacion/{habitacionid}");
+
+        if (!respuesta.Error)
+        {
+            habitacion = respuesta.Respuesta;
+        }
+        else
+        {
+            Mensaje = await respuesta.ObtenerError();
+        }
+    }
+
+
+    private async Task Grabar()
+    {
+        var respuesta = await http.Put<Habitacion>($"api/Habitacion/{habitacionid}", habitacion);
+        if (respuesta.Error)
+        {
+            var body = respuesta.HttpResponseMessage;
+        }
+
+        navigationManager.NavigateTo("/");
+    }
+
+    private void Cancelar()
+    {
+        navigationManager.NavigateTo("/");
+    }
+
+}
