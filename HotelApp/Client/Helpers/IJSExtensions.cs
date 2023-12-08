@@ -8,7 +8,7 @@ namespace HotelApp.Client.Helpers
         {
              await js.InvokeAsync<object>("Swal.fire", mensaje);
         }
-
+      
         public static async Task MostrarMensaje(this IJSRuntime js, string titulo, string mensaje, TipoMensajeSweetAlert tipoMensajeSweetAlert)
         {
             await js.InvokeAsync<object>("Swal.fire",titulo, mensaje, tipoMensajeSweetAlert.ToString());

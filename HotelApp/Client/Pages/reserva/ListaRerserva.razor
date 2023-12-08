@@ -15,7 +15,7 @@
     <div class="container-fluid">
         
         <MatTextField Class="mb-4" @bind-Value="@codigoBusqueda" Label="Buscar por Código" @oninput="BuscarPorCodigo"></MatTextField>
-        
+
         <div class="table-responsive">
             <table class="table table-hover table-striped shadow bg-white">
                 <thead class="bg-primary text-white text-center fw-bolder">
@@ -50,6 +50,7 @@
                         {
                             @foreach (var item in reservas.Where(r => string.IsNullOrEmpty(codigoBusqueda) || r.NroReserva.ToString().Contains(codigoBusqueda)))
                             {
+
                                 <tr>
                                     <td class="p-3 text-center text-dark-100">@item.NroReserva</td>
                                     <td class="p-3 text-center text-dark-100">@item.Dni</td>
@@ -112,12 +113,6 @@
     {
         reservaBorrar = reserBorr;
 
-        // var respuesta = await http.Delete($"api/Reservar/{reservaBorrar.Id}");
-        // if (respuesta.Error)
-        // {
-        //     var body = "Error, no se pudo borrar";
-        // }
-
         string MensajeConfirmacion = $"¿Desea borrar la reserva N°: {reserBorr.NroReserva}?";
 
         if (await js.Confirmar("Confirmar",MensajeConfirmacion, TipoMensajeSweetAlert.question))
@@ -143,6 +138,11 @@
     private async Task BuscarPorCodigo(ChangeEventArgs e)
     {
         codigoBusqueda = e.Value.ToString();
+        await Leer();
+    }
+
+    private async Task MostrarReservas()
+    {
         await Leer();
     }
 }

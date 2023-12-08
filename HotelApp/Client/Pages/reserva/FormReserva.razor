@@ -41,7 +41,7 @@
     <div class="form-group">
         <label class="mb-2 fw-bold color-primario">Fecha inicio</label>
         <div class="mb-2">
-            <MatDatePicker @bind-Value="@res.Fecha_inicio" Format="yyyy-MM-dd"/>
+            <MatDatePicker @bind-Value="@res.Fecha_inicio" DateFormat="d/M/yyyy" />
             <ValidationMessage For="@(() => res.Fecha_inicio)" onchange="@LeerHabs()" />
         </div>
     </div>
@@ -49,7 +49,7 @@
     <div class="form-group ">
         <label class="mb-2 fw-bold color-primario">Fecha Fin</label>
         <div class="mb-2">
-            <MatDatePicker @bind-Value="@res.Fecha_fin" Format="yyyy-MM-dd"/>
+            <MatDatePicker @bind-Value="@res.Fecha_fin" DateFormat="d/M/yyyy" />
             <ValidationMessage For="@(() => res.Fecha_fin)" onchange="@LeerHabs()" />
         </div>
     </div>
@@ -93,8 +93,8 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        res.Fecha_inicio = DateTime.Today;
-        res.Fecha_fin = DateTime.Today;
+        res.Fecha_inicio = DateTime.Today.Date;
+        res.Fecha_fin = DateTime.Today.Date;
         await LeerHabs();
     }
 

@@ -143,13 +143,7 @@
             await http.Delete($"api/Huesped/{huespedBorrar.Id}");
             await Leer();
         }
-        else
-        {
-            var response = await http.Delete($"api/Huesped/{id}");
-            Mensaje = await response.ObtenerError();
-            await js.Error("Error", Mensaje, TipoMensajeSweetAlert.error); 
-        }
-
+      
         huespedBorrar = null;
         await Leer();
     }

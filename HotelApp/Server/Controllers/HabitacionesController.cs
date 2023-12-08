@@ -77,6 +77,11 @@ namespace HotelApp.Server.Controllers
                 return BadRequest("El número de la habitacion no puede ser menor o igual a 0");
             }
 
+            if (habitacionDTO.Camas <= 0)
+            {
+                return BadRequest("La cantidad de camas a ingresar no debe ser menor o igual a 0.");
+            }
+
             if(entidad != null) // existe una hab con el num ingresado
             {
                 return BadRequest($"Ya existe una habitacion con el número: {habitacionDTO.Nhab}");
@@ -87,8 +92,7 @@ namespace HotelApp.Server.Controllers
                 {
                     Nhab = habitacionDTO.Nhab,
                     Camas = habitacionDTO.Camas,
-                    Estado = habitacionDTO.Estado,
-                   
+                    Estado = habitacionDTO.Estado,                  
                 };
                 context.Habitaciones.Add(mdHabitacion);
                 await context.SaveChangesAsync();

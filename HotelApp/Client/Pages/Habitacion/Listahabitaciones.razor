@@ -53,14 +53,21 @@
 
         <div class="row">
 
-            <div class="container my-4 d-flex gap-3 align-items-center">
+           @*  <div class="container my-4 d-flex gap-3 align-items-center">
                 <label for="fechaInicio" class="fw-bold">Fecha de inicio:</label>
                 <MatDatePicker id="fechaInicio" @bind-Value="FechaInicioSeleccionada" Format="yyyy-MM-dd"/>
                 <label for="fechaFin" class="fw-bold">Fecha de fin:</label>
                 <MatDatePicker id="fechaFin" @bind-Value="FechaFinSeleccionada" Format="yyyy-MM-dd"/>
                 <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
-            </div>
+            </div> *@
 
+            <div class="container my-4 d-flex gap-3 align-items-center">
+                <label for="fechaInicio" class="fw-bold">Fecha de inicio:</label>
+                <MatDatePicker id="fechaInicio" @bind-Value="FechaInicioSeleccionada" Format="yyyy-MM-dd" />
+                <label for="fechaFin" class="fw-bold">Fecha de fin:</label>
+                <MatDatePicker id="fechaFin" @bind-Value="FechaFinSeleccionada" Format="yyyy-MM-dd" />
+                <button class="btn btn-primary" @onclick="Filtrar">Filtrar</button>
+            </div>
             <button class="btn btn-secondary" @onclick="MostrarTodasLasHabitaciones">Mostrar todas las habitaciones</button>
 
 
@@ -69,6 +76,7 @@
                 <input type="number" id="numeroHabitacion" @bind="numHab" />
                 <button type="button" @onclick="BuscarPorNumero">Filtrar</button>
             </div> *@
+
 
             @if (Error)
             {
@@ -282,16 +290,10 @@
 
     private async Task Eliminar(Habitacion habBorrar)
     {
-        //await IJSExtensions.MostrarMensaje(jsruntime,"Titulo","Este es un mensaje de prueba", TipoMensajeSweetAlert.success);
 
         habitacionBorrar = habBorrar;
 
-        //  var respuesta = await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");
-
         string MensajeConfirmacion = $"¿Desea borrar la habitación N°: {habBorrar.Nhab}?";
-
-
-        //await IJSExtensions.Confirmar(jsruntime, "Confirmar", MensajeConfirmacion, TipoMensajeSweetAlert.question);
 
         //PARA MOSTRAR MENSAJE PERSONALIZADO
 
@@ -300,14 +302,6 @@
             await http.Delete($"api/Habitacion/{habitacionBorrar.Id}");          
             await Leer();
         }
-
-        //ACA ABAJO ES EN CASO QUE DE UN ERROR--> CONFIGURAR
-
-        // if (respuesta.Error)
-        // {
-        //     var mensaje = respuesta.ObtenerError();
-        //     await jsruntime.InvokeAsync<string>("aleret", mensaje);
-        // }
         habitacionBorrar = null;
         await Leer();
     }
@@ -414,20 +408,7 @@
                 string mensaje = await response1.ObtenerError();
                 await jsruntime.Error("Error", mensaje, TipoMensajeSweetAlert.error);
             
-            Mensaje = $"{await jsruntime.Error("Error", mensaje, TipoMensajeSweetAlert.error)}";
+            //Mensaje = $"{await jsruntime.Error("Error", mensaje, TipoMensajeSweetAlert.error)}";
         }
     }
-
-
-
-    // private async Task BuscarPorNumero(ChangeEventArgs e)
-    // {
-    //     var Buscar = await http.GetCod<Habitacion>($"api/Habitacion/GetNhab/{numHab}");
-
-    //     if (Buscar == null)
-    //     {
-    //         string Error = await Buscar.ObtenerError();
-    //         await jsruntime.Error("Error", Error, TipoMensajeSweetAlert.error);
-    //     }
-    // }
 }
